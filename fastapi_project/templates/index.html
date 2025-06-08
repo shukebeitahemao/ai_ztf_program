@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- 设置meta标签 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0,
+    user-scalable=no,maximum-scale=1.0,minimum-scale=1.0">
+    <meta content="ie=edge" http-equiv="X-UA-Compatible">
+    <title>FastAPI Project</title>
+</head>
+
+<body>
+    <div class='landing-content'>
+        <div class="request-info">
+            <p>请求方法: {{ request.method }}</p>
+            <p>请求URL: {{ request.url }}</p>
+            <p>客户端IP: {{ request.client.host }}</p>
+            <p>请求头: {{ request.headers }}</p>
+            <p>查询参数: {{ request.query_params }}</p>
+        </div>
+        <h1>您好！欢迎学习FastApi框架！{{request}}</h1>
+    </div>
+</body>
+
+</html>
