@@ -79,4 +79,4 @@ tmp/
 
 # 虚拟环境目录
 virtual_env_try/
-jupyter_try/ 
+/jupyter_try/ 
