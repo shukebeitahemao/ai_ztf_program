@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Mock Bilibili</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif; background-color: #f4f4f4; line-height: 1.4; }
+    /* Header */
+    .hero {
+      background: url('banner-placeholder.jpg') center/cover no-repeat;
+      height: 220px;
+      position: relative;
+      color: #fff;
+    }
+    .nav-primary {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 14px 32px;
+      font-size: 14px;
+    }
+    .nav-primary .logo {
+      width: 110px;
+      height: auto;
+    }
+    .nav-primary a { color: #fff; text-decoration: none; transition: opacity .2s; }
+    .nav-primary a:hover { opacity: .8; }
+    .search-box {
+      margin-left: auto;
+      position: relative;
+    }
+    .search-box input {
+      width: 290px;
+      padding: 8px 40px 8px 36px;
+      border-radius: 20px;
+      border: none;
+      background: rgba(255,255,255,.9);
+      font-size: 14px;
+      color: #333;
+    }
+    .search-box svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+    /* Tag Bar */
+    .tag-bar {
+      display: flex;
+      gap: 36px;
+      justify-content: center;
+      margin-top: -40px;
+    }
+    .tag {
+      width: 68px;
+      height: 68px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #555;
+      text-decoration: none;
+    }
+    .tag.active { color:#fb7299; }
+    /* Category Nav */
+    .cat-nav {
+      background: #fff;
+      border-bottom: 1px solid #e5e5e5;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      padding: 14px 0;
+    }
+    .cat-nav a {
+      font-size: 14px;
+      color: #333;
+      text-decoration: none;
+      padding: 4px 6px;
+      border-radius: 4px;
+      transition: background-color .2s;
+    }
+    .cat-nav a:hover { background: #f5f5f5; }
+    /* Main Video Grid */
+    .container { max-width: 1260px; margin: 34px auto; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
+      gap: 26px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,.05);
+      display: flex;
+      flex-direction: column;
+    }
+    .card img { width: 100%; height: 160px; object-fit: cover; }
+    .card .info { padding: 12px 14px; flex:1; display:flex; flex-direction:column; }
+    .card .title { font-size: 14px; color: #222; flex:1; }
+    .meta { margin-top: 8px; font-size: 12px; color: #999; display:flex; gap:12px; }
+  </style>
+</head>
+<body>
+
+<!-- Hero & primary nav -->
+<header class="hero">
+  <nav class="nav-primary">
+    <img src="logo-placeholder.png" alt="Bilibili logo" class="logo">
+    <a href="#">首页</a>
+    <a href="#">番剧</a>
+    <a href="#">直播</a>
+    <a href="#">游戏中心</a>
+    <a href="#">会员购</a>
+    <a href="#">漫画</a>
+    <!-- ... -->
+    <div class="search-box">
+      <!-- simplified magnifier icon -->
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#888"><path d="M10 2a8 8 0 015.292 13.708l5.513 5.514-1.414 1.414-5.514-5.513A8 8 0 1110 2zm0 2a6 6 0 100 12A6 6 0 0010 4z"/></svg>
+      <input type="text" placeholder="僵尸世界大战">
+    </div>
+  </nav>
+</header>
+
+<!-- circle tag shortcuts -->
+<section class="tag-bar">
+  <a href="#" class="tag active">动态</a>
+  <a href="#" class="tag">热门</a>
+  <!-- ... -->
+</section>
+
+<!-- category nav -->
+<nav class="cat-nav">
+  <a href="#">番剧</a>
+  <a href="#">国创</a>
+  <a href="#">综艺</a>
+  <a href="#">动画</a>
+  <a href="#">鬼畜</a>
+  <a href="#">舞蹈</a>
+  <a href="#">娱乐</a>
+  <a href="#">科技数码</a>
+  <a href="#">美食</a>
+  <a href="#">汽车</a>
+  <a href="#">体育运动</a>
+  <!-- ... -->
+</nav>
+
+<!-- video grid -->
+<main class="container">
+  <section class="grid">
+    <article class="card">
+      <img src="thumb1.jpg" alt="">
+      <div class="info">
+        <p class="title">这次真的不怪我，是折扣先动的手！</p>
+        <div class="meta"><span>3.2万</span><span>208</span><span>10:14</span></div>
+      </div>
+    </article>
+    <article class="card">
+      <img src="thumb2.jpg" alt="">
+      <div class="info">
+        <p class="title">无涂层不粘锅，全面的实操检证和理论探讨</p>
+        <div class="meta"><span>2.2万</span><span>180</span><span>08:20</span></div>
+      </div>
+    </article>
+    <article class="card">
+      <img src="thumb3.jpg" alt="">
+      <div class="info">
+        <p class="title">贵族水果从上百元一斤到10元3斤</p>
+        <div class="meta"><span>3.7万</span><span>2108</span><span>09:04</span></div>
+      </div>
+    </article>
+    <article class="card">
+      <img src="thumb4.jpg" alt="">
+      <div class="info">
+        <p class="title">全国探钓第20条河，人生怎么选都有遗憾</p>
+        <div class="meta"><span>4.7万</span><span>514</span><span>12:34</span></div>
+      </div>
+    </article>
+    <!-- 继续添加更多卡片以填充布局 -->
+  </section>
+</main>
+
+</body>
+</html>

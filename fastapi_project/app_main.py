@@ -43,6 +43,7 @@ exception_handlers = {
 #     ZeroDivisionError: zero_division_handler
 # }
 
+
 app = FastAPI(title="学习FastApi框架文档",
               description="以下是关于fastapi文档的描述",
               version="0.0.1",
