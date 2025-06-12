@@ -3,6 +3,30 @@
 This template should help get you started developing with Vue 3 in Vite.
 
 ## Recommended IDE Setup
+# ZTF-VUE 项目
+
+一个基于 Vue 3 的前端项目。
+
+## 🚀 快速开始
+
+### 前置要求
+确保已安装以下环境：
+- [Node.js](https://nodejs.org/) (推荐 LTS 版本)
+- npm (通常随 Node.js 一起安装)
+
+### 安装与运行
+1. ​**克隆项目**​
+   ```bash
+   git clone https://github.com/your-username/ZTF-VUW.git
+2.**进入目录**
+cd ZTF-VUE
+3.**安装依赖**
+npm install
+4.**启动开发服务器**
+npm run dev
+5.**​打开浏览器​**
+开发服务器通常会在 http://localhost:3000 启动（具体端口请查看终端输出）
+
 
 [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
 
