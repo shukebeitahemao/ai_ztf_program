@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar.vue'
 import ChatHeader from './components/ChatHeader.vue'
 import ChatContainer from './components/ChatContainer.vue'
 import ChatInput from './components/ChatInput.vue'
+import { RouterView } from 'vue-router'
 
 interface Message {
   id: number
@@ -41,19 +42,7 @@ const handleSendMessage = (content: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col">
-    <Header />
-    <div class="flex flex-1 pt-[60px]">
-      <Sidebar />
-      <main class="flex-1 flex flex-col bg-paper">
-        <ChatHeader />
-        <ChatContainer :messages="messages" />
-        <div class="mt-auto pb-6 px-6">
-          <ChatInput @send-message="handleSendMessage" />
-        </div>
-      </main>
-    </div>
-  </div>
+  <RouterView />
 </template>
 
 <style scoped>
