@@ -2,7 +2,7 @@
 //import { RouterLink, RouterView } from 'vue-router'
 //import HelloWorld from './components/HelloWorld.vue'
 import { ref } from 'vue'
-import Header from './components/Header.vue'
+import WebHeader from './components/WebHeader.vue'
 import Sidebar from './components/Sidebar.vue'
 import ChatHeader from './components/ChatHeader.vue'
 import ChatContainer from './components/ChatContainer.vue'

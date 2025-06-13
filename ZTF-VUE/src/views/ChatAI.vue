@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen flex flex-col">
-    <Header />
+    <WebHeader />
     <div class="flex flex-1 pt-[60px]">
       <Sidebar />
       <main class="flex-1 flex flex-col bg-paper">
@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import Header from '../components/Header.vue'
+import WebHeader from '../components/WebHeader.vue'
 import Sidebar from '../components/Sidebar.vue'
 import ChatHeader from '../components/ChatHeader.vue'
 import ChatContainer from '../components/ChatContainer.vue'

@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen flex flex-col">
-    <Header />
+    <WebHeader />
     <div class="flex-1 pt-[60px]">
       <!-- 首页内容区域 -->
       <div class="container mx-auto px-6 py-8">
@@ -19,5 +19,5 @@
 </template>
 
 <script setup lang="ts">
-import Header from '../components/Header.vue'
+import WebHeader from '../components/WebHeader.vue'
 </script>
