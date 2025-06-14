@@ -7,7 +7,7 @@
         @new-chat="handleNewChat"
       />
       <main class="flex-1 flex flex-col bg-paper">
-        <ChatHeader />
+        <ChatHeader @new-chat="handleNewChatWithTopic" />
         <ChatContainer :messages="messages" />
         <div class="mt-auto pb-6 px-6">
           <ChatInput @send-message="handleSendMessage" />
@@ -64,6 +64,12 @@ const handleNewChat = () => {
   messages.value = []
   // 重置首次消息标志
   isFirstMessage.value = true
+}
+
+const handleNewChatWithTopic = (topic: string) => {
+  handleNewChat()
+  // 这里可以添加与后端通信的代码
+  console.log('Creating new chat with topic:', topic)
 }
 
 const handleSendMessage = (content: string) => {
