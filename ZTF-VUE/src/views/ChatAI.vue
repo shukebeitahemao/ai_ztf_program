@@ -25,6 +25,7 @@ import ChatHeader from '../components/ChatHeader.vue'
 import ChatContainer from '../components/ChatContainer.vue'
 import ChatInput from '../components/ChatInput.vue'
 import { getOrCreateUID } from '../utils/user'
+import axios from 'axios'
 
 interface Message {
   id: number
@@ -45,11 +46,12 @@ const messages = ref<Message[]>([])
 const chatRecords = ref<ChatRecord[]>([])
 const userUID = ref('')
 const isFirstMessage = ref(true)
+const API_BASE_URL = 'http://localhost:3000' // 根据实际后端地址修改
 
-onMounted(() => {
-  userUID.value = getOrCreateUID()
+onMounted(async () => {
+  userUID.value = await getOrCreateUID()
 })
-
+// 格式化聊天标题,是往后端传输的session_id
 const formatChatTitle = (uid: string, date: Date): string => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -58,21 +60,21 @@ const formatChatTitle = (uid: string, date: Date): string => {
   const minutes = String(date.getMinutes()).padStart(2, '0')
   return `${uid}_${year}${month}${day}_${hours}${minutes}`
 }
-
+// 新建聊天
 const handleNewChat = () => {
   // 清空当前聊天消息
   messages.value = []
   // 重置首次消息标志
   isFirstMessage.value = true
 }
-
+// 新建聊天，带话题
 const handleNewChatWithTopic = (topic: string) => {
   handleNewChat()
   // 这里可以添加与后端通信的代码
   console.log('Creating new chat with topic:', topic)
 }
-
-const handleSendMessage = (content: string) => {
+// 发送消息
+const handleSendMessage = async (content: string) => {
   // 添加用户消息
   const userMessage: Message = {
     id: Date.now(),
@@ -83,7 +85,7 @@ const handleSendMessage = (content: string) => {
   }
   messages.value.push(userMessage)
 
-  // 如果是第一条消息，创建聊天记录
+  // 如果是第一条消息，触发形成chatRecord记录号
   if (isFirstMessage.value) {
     const now = new Date()
     const chatRecord: ChatRecord = {
@@ -93,7 +95,17 @@ const handleSendMessage = (content: string) => {
       uid: userUID.value
     }
     chatRecords.value.push(chatRecord)
+    console.log('chatRecord:', chatRecord)
     isFirstMessage.value = false
+
+    // 发送 ChatRecord 到后端
+    try {
+      const response = await axios.post(`${API_BASE_URL}/chat/create_new_chat`, chatRecord)
+      console.log('生成的聊天记录:', chatRecord)
+      console.log('服务器响应:', response.data)
+    } catch (error) {
+      console.error('发送聊天记录失败:', error)
+    }
   }
 
   // 添加系统自动回复

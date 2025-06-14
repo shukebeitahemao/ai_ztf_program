@@ -1,13 +1,18 @@
+import { sendUserUID } from '../api/user'
+
 const UID_KEY = 'ztf_user_uid'
 
-export const generateUID = (): string => {
-  return 'uid_' + Math.random().toString(36).substr(2, 9)
+export const generateUID = async (): Promise<string> => {
+  const uid = 'uid_' + Math.random().toString(36).substr(2, 9)
+  console.log('生成用户ID:', uid)
+  //await sendUserUID(uid)
+  return uid
 }
 
-export const getOrCreateUID = (): string => {
+export const getOrCreateUID = async (): Promise<string> => {
   let uid = localStorage.getItem(UID_KEY)
   if (!uid) {
-    uid = generateUID()
+    uid = await generateUID()
     localStorage.setItem(UID_KEY, uid)
   }
   return uid
