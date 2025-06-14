@@ -2,7 +2,10 @@
   <div class="min-h-screen flex flex-col">
     <WebHeader />
     <div class="flex flex-1 pt-[60px]">
-      <Sidebar :chat-records="chatRecords" />
+      <Sidebar
+        :chat-records="chatRecords"
+        @new-chat="handleNewChat"
+      />
       <main class="flex-1 flex flex-col bg-paper">
         <ChatHeader />
         <ChatContainer :messages="messages" />
@@ -54,6 +57,13 @@ const formatChatTitle = (uid: string, date: Date): string => {
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
   return `${uid}_${year}${month}${day}_${hours}${minutes}`
+}
+
+const handleNewChat = () => {
+  // 清空当前聊天消息
+  messages.value = []
+  // 重置首次消息标志
+  isFirstMessage.value = true
 }
 
 const handleSendMessage = (content: string) => {
