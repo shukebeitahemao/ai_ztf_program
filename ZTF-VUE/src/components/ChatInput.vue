@@ -32,6 +32,35 @@ const emit = defineEmits(['send-message'])
 
 const handleSend = () => {
   if (input.value.trim()) {
+    // const response = await fetch('http://localhost:8000/chat', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json'
+    //   },
+    //   body: JSON.stringify({
+    //     user_msg: input.value,
+    //     story_type:'',
+    //     session_id:'fwergfre'
+    //   })
+    // })    
+    // const data = await response.json()
+//     const data = {
+//       {
+// msg:\[
+// {'最后聊天时间':'2020-01-01 12:00:00'
+// '主题概述':'询问邹韬奋的生平',
+// ‘session_id’：‘sdwefasfwsefew’,
+// }，
+
+// {'最后聊天时间':'2020-01-01 12:00:00'
+// '主题概述':'询问邹韬奋的生平',
+// ‘session_id’：‘sdwefasfwsefew’,
+// }
+
+// \]
+// }
+//     }
+    console.log('收到后端响应:', data)
     emit('send-message', input.value)
     input.value = ''
   }
