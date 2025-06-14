@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import ChatView from '../views/ChatAI.vue'
+import ChatAI from '../views/ChatAI.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -13,7 +13,7 @@ const router = createRouter({
     {
       path: '/chat',
       name: 'chat',
-      component: ChatView
+      component: ChatAI
     },
     {
       path: '/:pathMatch(.*)*',
