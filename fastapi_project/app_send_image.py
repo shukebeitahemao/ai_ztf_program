@@ -16,3 +16,10 @@ async def get_image(image_name: str):
         filename=image_name,
         media_type="image/png"  # 可以根据实际图片类型调整
     )
+
+@app.get("/get-ip")
+async def get_ip(request: Request):
+    # 获取客户端IP地址
+    client_ip = request.client.host
+    return {"ip_address": client_ip}
+

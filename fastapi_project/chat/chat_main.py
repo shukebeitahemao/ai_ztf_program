@@ -1,5 +1,5 @@
-import chat_util
-from chat_util import start_llama_query
+import fastapi_project.util.chat_util as chat_util
+from fastapi_project.util.chat_util import start_llama_query
 from pathlib import Path
 from llama_index.core import StorageContext, load_index_from_storage
 import fastapi
