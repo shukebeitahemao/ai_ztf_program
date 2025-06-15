@@ -25,7 +25,7 @@ import ChatHeader from '../components/ChatHeader.vue'
 import ChatContainer from '../components/ChatContainer.vue'
 import ChatInput from '../components/ChatInput.vue'
 import { getOrCreateUID } from '../utils/user'
-import axios from 'axios'
+import { createNewChat, sendMessage } from '../api/ftbAPI'
 
 interface Message {
   id: number
@@ -46,12 +46,12 @@ const messages = ref<Message[]>([])
 const chatRecords = ref<ChatRecord[]>([])
 const userUID = ref('')
 const isFirstMessage = ref(true)
-const API_BASE_URL = 'http://localhost:3000' // 根据实际后端地址修改
+const currentChatId = ref('')
 
 onMounted(async () => {
   userUID.value = await getOrCreateUID()
 })
-// 格式化聊天标题,是往后端传输的session_id
+// 格式化聊天标题
 const formatChatTitle = (uid: string, date: Date): string => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -95,29 +95,42 @@ const handleSendMessage = async (content: string) => {
       uid: userUID.value
     }
     chatRecords.value.push(chatRecord)
-    console.log('chatRecord:', chatRecord)
+    currentChatId.value = chatRecord.id
     isFirstMessage.value = false
 
     // 发送 ChatRecord 到后端
     try {
-      const response = await axios.post(`${API_BASE_URL}/chat/create_new_chat`, chatRecord)
+      const response = await createNewChat(chatRecord.title)
       console.log('生成的聊天记录:', chatRecord)
-      console.log('服务器响应:', response.data)
+      console.log('服务器响应:', response)
     } catch (error) {
       console.error('发送聊天记录失败:', error)
     }
   }
 
-  // 添加系统自动回复
-  setTimeout(() => {
+  // 发送消息到服务器
+  try {
+    const response = await sendMessage(content, currentChatId.value, userUID.value)
+    // 添加系统回复
     const systemMessage: Message = {
       id: Date.now(),
-      content: '收到',
+      content: response.reply || '收到',
       isUser: false,
       timestamp: new Date(),
       uid: 'system'
     }
     messages.value.push(systemMessage)
-  }, 500)
+  } catch (error) {
+    console.error('发送消息失败:', error)
+    // 添加错误提示消息
+    const errorMessage: Message = {
+      id: Date.now(),
+      content: '消息发送失败，请稍后重试',
+      isUser: false,
+      timestamp: new Date(),
+      uid: 'system'
+    }
+    messages.value.push(errorMessage)
+  }
 }
 </script>

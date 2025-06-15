@@ -1,11 +1,10 @@
-import { sendUserUID } from '../api/user'
+import { sendUserUID } from '../api/ftbAPI'
 
 const UID_KEY = 'ztf_user_uid'
 
 export const generateUID = async (): Promise<string> => {
   const uid = 'uid_' + Math.random().toString(36).substr(2, 9)
-  console.log('生成用户ID:', uid)
-  //await sendUserUID(uid)
+  await sendUserUID(uid)
   return uid
 }
 

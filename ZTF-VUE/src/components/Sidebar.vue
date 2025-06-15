@@ -31,23 +31,26 @@
 </template>
 
 <script setup lang="ts">
-import { getOrCreateUID } from '../utils/user'
 
+import { getOrCreateUID } from '../utils/user'
+// 定义聊天记录的类型
 interface ChatRecord {
   id: string
   title: string
   timestamp: Date
   uid: string
 }
-
+// 定义属性
 const props = defineProps<{
   chatRecords: ChatRecord[]
 }>()
 
+// 定义事件
 const emit = defineEmits<{
   (e: 'new-chat'): void
 }>()
 
+// 格式化时间
 const formatTime = (date: Date) => {
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
@@ -58,6 +61,7 @@ const formatTime = (date: Date) => {
   }).format(date)
 }
 
+// 新建对话
 const handleNewChat = () => {
   emit('new-chat')
 }
