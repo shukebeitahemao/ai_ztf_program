@@ -30,6 +30,6 @@ const userUID = ref('')
 // 获取用户ID
 onMounted(async () => {
   userUID.value = await getOrCreateUID()
-  console.log('用户ID:', userUID.value)
+  //console.log('用户ID:', userUID.value)
 })
 </script>

@@ -2,12 +2,13 @@
   <div class="min-h-screen flex flex-col">
     <WebHeader />
     <div class="flex flex-1 pt-[60px]">
+      <!--侧边栏，不带topic的新建对话-->
       <Sidebar
         :chat-records="chatRecords"
-        @new-chat="handleNewChat"
+        @new-chat="handleNewChat()"
       />
       <main class="flex-1 flex flex-col bg-paper">
-        <ChatHeader @new-chat="handleNewChatWithTopic" />
+        <ChatHeader @new-chat="handleNewChat" />
         <ChatContainer :messages="messages" />
         <div class="mt-auto pb-6 px-6">
           <ChatInput @send-message="handleSendMessage" />
@@ -40,6 +41,7 @@ interface ChatRecord {
   title: string
   timestamp: Date
   uid: string
+  topic?: string
 }
 
 const messages = ref<Message[]>([])
@@ -61,60 +63,60 @@ const formatChatTitle = (uid: string, date: Date): string => {
   return `${uid}_${year}${month}${day}_${hours}${minutes}`
 }
 // 新建聊天
-const handleNewChat = () => {
+const handleNewChat = async (topic: string = '') => {
   // 清空当前聊天消息
   messages.value = []
   // 重置首次消息标志
   isFirstMessage.value = true
-}
-// 新建聊天，带话题
-const handleNewChatWithTopic = (topic: string) => {
-  handleNewChat()
-  // 这里可以添加与后端通信的代码
-  console.log('Creating new chat with topic:', topic)
+
+  // 创建新的聊天记录
+  const now = new Date()
+  const chatRecord: ChatRecord = {
+    id: formatChatTitle(userUID.value, now),
+    title: formatChatTitle(userUID.value, now),
+    timestamp: now,
+    uid: userUID.value,
+    topic
+  }
+
+  // 添加到聊天记录列表
+  chatRecords.value.push(chatRecord)
+  // 更新当前聊天ID
+  currentChatId.value = chatRecord.id
+
+  // 发送到后端
+  try {
+    await createNewChat(chatRecord.id, topic)
+    if (topic) {
+      console.log('Creating new chat with topic:', topic)
+    } else {
+      console.log('Creating new chat without topic')
+    }
+  } catch (error) {
+    console.error('创建聊天记录失败:', error)
+  }
 }
 // 发送消息
 const handleSendMessage = async (content: string) => {
+  const now = new Date()
+
   // 添加用户消息
   const userMessage: Message = {
     id: Date.now(),
     content,
     isUser: true,
-    timestamp: new Date(),
+    timestamp: now,
     uid: userUID.value
   }
   messages.value.push(userMessage)
 
-  // 如果是第一条消息，触发形成chatRecord记录号
-  if (isFirstMessage.value) {
-    const now = new Date()
-    const chatRecord: ChatRecord = {
-      id: formatChatTitle(userUID.value, now),
-      title: formatChatTitle(userUID.value, now),
-      timestamp: now,
-      uid: userUID.value
-    }
-    chatRecords.value.push(chatRecord)
-    currentChatId.value = chatRecord.id
-    isFirstMessage.value = false
-
-    // 发送 ChatRecord 到后端
-    try {
-      const response = await createNewChat(chatRecord.title)
-      console.log('生成的聊天记录:', chatRecord)
-      console.log('服务器响应:', response)
-    } catch (error) {
-      console.error('发送聊天记录失败:', error)
-    }
-  }
-
   // 发送消息到服务器
   try {
-    const response = await sendMessage(content, currentChatId.value, userUID.value)
+    const response = await sendMessage(content, currentChatId.value, userUID.value, now)
     // 添加系统回复
     const systemMessage: Message = {
       id: Date.now(),
-      content: response.reply || '收到',
+      content: response.reply || '后端已收到您的消息',
       isUser: false,
       timestamp: new Date(),
       uid: 'system'
