@@ -13,17 +13,18 @@ from llama_index.llms.deepseek import DeepSeek
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.response_synthesizers import ResponseMode
 from .chat_util import initialize_llamaindex
+from ..settings import settings
 
 ##获取连接对象
 def connect_to_postgres():
     try:
         # 连接到PostgreSQL数据库
         connection = psycopg2.connect(
-            user="postgres",
-            password="wzdshjw123",
+            user=settings.USERS,
+            password=settings.PASSWORD,
             host="localhost",
             port="5432",
-            database="first_pg"
+            database=settings.DATABASE
         )
         return connection
     except Error as e:
@@ -69,7 +70,35 @@ def execute_query(query, params=None):
             connection.close()
             print("数据库连接已关闭")
 
-##将txt_split_file中的文件写入pgsql的article表
+#创建article表
+def create_article_table():
+    query = """
+    CREATE TABLE IF NOT EXISTS article (
+        id SERIAL,
+        title TEXT,
+        body TEXT,
+        tags text[],
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """
+    execute_query(query)
+    return None
+
+#创建message表
+def create_message_table():
+    query = """
+DROP TABLE IF EXISTS message;
+CREATE TABLE IF NOT EXISTS message (
+    user_id TEXT,
+    session_id TEXT,
+    history TEXT,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    abstract TEXT DEFAULT '这是摘要'
+);"""
+    execute_query(query)
+    return None
+
+##将指定文件夹中的文件写入pgsql的article表
 def write_to_article(txt_dir):
     import os
     from datetime import datetime
@@ -103,8 +132,35 @@ def write_to_article(txt_dir):
         execute_query(insert_query, params)
     return None
 
-##从指定文件夹中将数据加载到postgresql数据库
-
+##随机生成三条message信息到postgresql数据库的message表
+import uuid
+import json
+def generate_message_info():
+    # 生成3个不同的user_id
+    user_ids = [str(uuid.uuid4()) for _ in range(3)]
+    # 为每个user_id生成3个不同的session_id并创建对应的历史记录
+    for user_id in user_ids:
+        # 为每个用户生成3个session_id
+        session_ids = ['session_'+str(uuid.uuid4()) for _ in range(3)]
+        # 为每个session创建历史记录
+        for session_id in session_ids:
+            chat_history = [
+                {"role": "assistant", "content": "你好"},
+                {"role": "user", "content": "邹韬奋是谁？"},
+                {"role": "assistant", "content": "他是一个伟大的作家"},
+                {"role": "user", "content": "你吃了么"},
+            ]
+            
+            # 将历史记录转换为JSON字符串
+            history_json = json.dumps(chat_history, ensure_ascii=False)
+            
+            # 插入数据库
+            insert_query = f"""
+            INSERT INTO message (user_id, session_id, history)
+            VALUES ('{user_id}', '{session_id}', '{history_json}');
+            """
+            execute_query(insert_query)
+    return None
 
 
 
@@ -189,9 +245,9 @@ def get_docs_from_summaryindex(doc_sum_index,query):
 def create_summary_and_simple_index():
     # 初始化LLM和嵌入模型
     llm, embed_model = initialize_llamaindex(
-        deepseekapi="sk-1ce00a653d2c46238249e685eb3a9c7d"  # 替换为您的DeepSeek API密钥
+        deepseekapi=settings.DEEPSEEK_API  # 替换为您的DeepSeek API密钥
     )
-    documents = SimpleDirectoryReader(input_dir="D:\\AI_ZTF\\fastapi_project\\data\\").load_data()
+    documents = SimpleDirectoryReader(input_dir="fastapi_project\\data\\").load_data()
     for doc in documents:
         # 将原始doc_id存储在metadata中
         doc.metadata['original_doc_id'] = doc.doc_id
@@ -201,17 +257,22 @@ def create_summary_and_simple_index():
 
 ##保存两个index
 def save_indexes(index,doc_sum_index):
-    index.storage_context.persist("D:\\ai_ztf\\fastapi_project\\store\\simpleindex")
-    doc_sum_index.storage_context.persist("D:\\ai_ztf\\fastapi_project\\store\\summaryindex")
+    index.storage_context.persist("fastapi_project\\store\\simpleindex")
+    doc_sum_index.storage_context.persist("fastapi_project\\store\\summaryindex")
 
 ##加载两个index
 def load_indexes():
+    # 先初始化LLM和嵌入模型
+    llm, embed_model = initialize_llamaindex(
+        deepseekapi=settings.DEEPSEEK_API
+    )
+    
     # 加载VectorStoreIndex
-    storage_context = StorageContext.from_defaults(persist_dir="D:\\ai_ztf\\fastapi_project\\store\\simpleindex")
+    storage_context = StorageContext.from_defaults(persist_dir="fastapi_project\\store\\simpleindex")
     loaded_simpleindex = load_index_from_storage(storage_context)
 
     # 加载DocumentSummaryIndex
-    storage_context = StorageContext.from_defaults(persist_dir="D:\\ai_ztf\\fastapi_project\\store\\summaryindex")
+    storage_context = StorageContext.from_defaults(persist_dir="fastapi_project\\store\\summaryindex")
     loaded_doc_sum_index = load_index_from_storage(storage_context)
     return loaded_simpleindex,loaded_doc_sum_index
 
@@ -228,6 +289,8 @@ def get_final_nodes_text(loaded_simpleindex,loaded_doc_sum_index,user_query):
     return res_text
 
 if __name__=="__main__":
+    print(settings.DEEPSEEK_API)
+    print(".env文件信息成功加载！")
     index,doc_sum_index=create_summary_and_simple_index()
     save_indexes(index,doc_sum_index)
     print("两个索引创建成功")
@@ -235,3 +298,17 @@ if __name__=="__main__":
     print("两个索引加载成功")
     res_text=get_final_nodes_text(loaded_simpleindex,loaded_doc_sum_index,user_query="章先生是谁？")
     print(res_text)
+    connect_to_postgres()
+    print("数据库连接成功！")
+    create_article_table()
+    print("article表创建成功")
+    create_message_table()
+    print("message表创建成功")
+    generate_message_info()
+    print("message表随机生成三条信息成功")
+    write_to_article(settings.ARTICLE_DIR)
+    print("txt_files文件夹中的txt文件写入pgsql的article表成功!")
+    load_indexes()
+    print("两个索引加载成功")
+
+

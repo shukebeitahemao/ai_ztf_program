@@ -1,15 +1,16 @@
-from util.chat_util import (
+from .util.chat_util import (
     initialize_llamaindex,
     get_user_keywords,
     get_es_docs,
     find_paragraphs_with_keyword,
     get_paras_from_kws
 )
-from util import db_util
+from .settings import settings
+from .util import db_util
 import uuid
 import json
 # 初始化llm和embed模型
-llm, embed_model = initialize_llamaindex(deepseekapi="sk-1ce00a653d2c46238249e685eb3a9c7d")
+llm, embed_model = initialize_llamaindex(deepseekapi=settings.DEEPSEEK_API)
 summary_index,simple_index = db_util.load_indexes()
 # chat_history = [
 #     {"role": "assistant", "content": "你好"},
@@ -25,7 +26,7 @@ from typing import Optional
 from openai import OpenAI
 app = FastAPI()
 
-client = OpenAI(api_key="sk-1ce00a653d2c46238249e685eb3a9c7d", base_url="https://api.deepseek.com")
+client = OpenAI(api_key=settings.DEEPSEEK_API, base_url="https://api.deepseek.com")
 msg_pool = {
     'user1':{'session1':[{"role": "system", "content": "You are a helpful assistant"},
         {"role": "user", "content": "Hello"}],

@@ -8,6 +8,7 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.deepseek import DeepSeek
 import chromadb
 import os
+from ..settings import settings
 #====================================
 #测试：读取txt_file文件夹下指定txt文档并打印
 def read_txt_file(file_path):
@@ -138,7 +139,7 @@ def get_user_keywords(chat_history):
     from llama_index.llms.deepseek import DeepSeek
     import json
     llm = DeepSeek(
-            api_key="sk-1ce00a653d2c46238249e685eb3a9c7d",  # 替换为你的 DeepSeek API key
+            api_key=settings.DEEPSEEK_API,  # 替换为你的 DeepSeek API key
             model="deepseek-chat"
         )
         # 使用llm进行查询
@@ -202,6 +203,9 @@ def get_paras_from_kws(kws):
         # 修正：将当前关键词的段落列表添加到最终结果中
         kw_paragraphs_list.append(paragraphs_for_this_kw)
     return kw_paragraphs_list
+
+if __name__=="__main__":
+    print(settings.DEEPSEEK_API)
 
 
 
