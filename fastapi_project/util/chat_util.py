@@ -1,8 +1,8 @@
 import re 
 import os
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader,DocumentSummaryIndex
-from llama_index.core import PromptTemplate,get_response_synthesizer
-from llama_index.core.settings import Settings
+from llama_index import VectorStoreIndex, SimpleDirectoryReader, DocumentSummaryIndex
+from llama_index import PromptTemplate, get_response_synthesizer
+from llama_index import ServiceContext
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.deepseek import DeepSeek
@@ -76,8 +76,8 @@ def initialize_llamaindex(deepseekapi):
     )
 
     # 替换 ServiceContext 创建
-    Settings.llm = llm
-    Settings.embed_model = embed_model
+    ServiceContext.llm = llm
+    ServiceContext.embed_model = embed_model
 
     # # 初始化 Chroma 客户端
     # chroma_client = chromadb.Client()
