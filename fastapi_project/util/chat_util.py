@@ -138,7 +138,7 @@ def get_user_keywords(chat_history):
     from llama_index.llms.deepseek import DeepSeek
     import json
     llm = DeepSeek(
-            api_key="sk-5f2880952eb543a59d02d1015dcdd8e1",  # 替换为你的 DeepSeek API key
+            api_key="sk-1ce00a653d2c46238249e685eb3a9c7d",  # 替换为你的 DeepSeek API key
             model="deepseek-chat"
         )
         # 使用llm进行查询

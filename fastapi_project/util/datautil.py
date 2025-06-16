@@ -41,5 +41,63 @@ def split_markdown_by_heading(markdown_file: str, output_dir: str):
 ##从指定文件夹中将数据加载到postgresql数据库
 
 #将D:\ai_ztf_resouce\txt_files文件夹中所有txt文件写入pgsql的article表
-write_to_article("D:\\ai_ztf_resouce\\txt_files")
+# write_to_article("D:\\ai_ztf_resouce\\txt_files")
 #执行    & D:/python_envs/ai_project/Scripts/python.exe -m fastapi_project.util.db_util
+# query = """
+# DROP TABLE IF EXISTS message;
+# CREATE TABLE IF NOT EXISTS message (
+#     user_id TEXT,
+#     session_id TEXT,
+#     history TEXT,
+#     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+#     abstract TEXT DEFAULT '这是摘要'
+# );"""
+# execute_query(query)
+import uuid
+import json
+
+# # 生成3个不同的user_id
+# user_ids = [str(uuid.uuid4()) for _ in range(3)]
+
+# # 为每个user_id生成3个不同的session_id并创建对应的历史记录
+# for user_id in user_ids:
+#     # 为每个用户生成3个session_id
+#     session_ids = ['session_'+str(uuid.uuid4()) for _ in range(3)]
+    
+#     # 为每个session创建历史记录
+#     for session_id in session_ids:
+#         chat_history = [
+#             {"role": "assistant", "content": "你好"},
+#             {"role": "user", "content": "邹韬奋是谁？"},
+#             {"role": "assistant", "content": "他是一个伟大的作家"},
+#             {"role": "user", "content": "你吃了么"},
+#         ]
+        
+#         # 将历史记录转换为JSON字符串
+#         history_json = json.dumps(chat_history, ensure_ascii=False)
+        
+#         # 插入数据库
+#         insert_query = f"""
+#         INSERT INTO message (user_id, session_id, history)
+#         VALUES ('{user_id}', '{session_id}', '{history_json}');
+#         """
+#         execute_query(insert_query)
+
+# print("已成功创建3个用户，每个用户3个会话")
+
+# 为message表添加abstract列
+# alter_query = """
+# ALTER TABLE message 
+# ADD COLUMN abstract TEXT DEFAULT '这是摘要';
+# """
+# execute_query(alter_query)
+# print("已成功为message表添加abstract列")
+
+select_query = """
+SELECT session_id,update_time,abstract FROM message limit 2;
+"""
+results = execute_query(select_query)
+print(type(results))
+
+
+

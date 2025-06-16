@@ -50,8 +50,9 @@ def execute_query(query, params=None):
             results = cursor.fetchall()
             # 获取列名
             column_names = [desc[0] for desc in cursor.description] if cursor.description else []
-            print("列名:", column_names)
-            print("查询结果:", results)
+            # print("列名:", column_names)
+            # print("查询结果:", results)
+            return results
         else:
             # 对于INSERT、UPDATE、DELETE操作，获取受影响的行数
             affected_rows = cursor.rowcount
@@ -188,7 +189,7 @@ def get_docs_from_summaryindex(doc_sum_index,query):
 def create_summary_and_simple_index():
     # 初始化LLM和嵌入模型
     llm, embed_model = initialize_llamaindex(
-        deepseekapi="sk-5f2880952eb543a59d02d1015dcdd8e1"  # 替换为您的DeepSeek API密钥
+        deepseekapi="sk-1ce00a653d2c46238249e685eb3a9c7d"  # 替换为您的DeepSeek API密钥
     )
     documents = SimpleDirectoryReader(input_dir="D:\\AI_ZTF\\fastapi_project\\data\\").load_data()
     for doc in documents:
