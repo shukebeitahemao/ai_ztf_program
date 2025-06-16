@@ -147,13 +147,14 @@ def load_specific_session(
 def create_user():
     user_id = str(uuid.uuid4())
     session_id = 'session_'+str(uuid.uuid4())
-    excute_query = f"""
-    INSERT INTO message (user_id, session_id) VALUES ('{user_id}', '{session_id}');
-    """
-    db_util.execute_query(excute_query)
+    #只需要返回用户id，不需要写入数据库，等到用户离开的时候自然会写入，除非用户没有聊天
+    # excute_query = f"""
+    # INSERT INTO message (user_id, session_id) VALUES ('{user_id}', '{session_id}');
+    # """
+    # db_util.execute_query(excute_query)
     msg_pool[user_id] = {session_id: []}
     print('创建了新用户后的msg_pool',msg_pool)
-    return {"user_id": user_id, "session_id": session_id}
+    return {"user_id": user_id}
 
 @app.get("/create_new_chat")
 def create_new_chat(
@@ -181,7 +182,9 @@ def delete_session(
 def save_usermsg(
     userid: str = Query(..., description="用户ID")
 ):
-    # 获取该用户的所有会话消息
+    # 获取该用户的所有会话消息，如果用户没有聊天，则不保存
+    if userid not in msg_pool:
+        return {"msg": "用户没有聊天"}
     user_sessions = msg_pool.get(userid, {})    
     for session_id, history in user_sessions.items():
         # 将历史记录转换为JSON字符串
