@@ -22,9 +22,21 @@ summary_index,simple_index = db_util.load_indexes()
   
 
 from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from openai import OpenAI
 app = FastAPI()
+# 添加CORS中间件
+app.add_middleware(
+    CORSMiddleware,
+    # 允许的源列表
+    allow_origins=["http://localhost:5173"],  # 替换成您的前端URL
+    # 或者在开发环境中允许所有源
+    # allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],  # 允许所有HTTP方法
+    allow_headers=["*"],  # 允许所有请求头
+)
 
 client = OpenAI(api_key=settings.DEEPSEEK_API, base_url="https://api.deepseek.com")
 msg_pool = {
