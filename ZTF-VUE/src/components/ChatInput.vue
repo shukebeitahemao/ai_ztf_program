@@ -8,15 +8,18 @@
         placeholder="输入您想与邹韬奋交流的内容..."
         @keydown.enter.prevent="handleSend"
       ></textarea>
-      <div class="absolute bottom-4 right-4 flex items-center space-x-2">
-        <!--<button class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200">
-          <i class="fas fa-microphone text-gray-500"></i>
-        </button>-->
+      <div class="absolute bottom-4 right-4 flex flex-col items-end space-y-2">
         <button
-          class="px-4 h-10 flex items-center justify-center rounded-full bg-primary hover:bg-secondary shadow transition-colors text-white"
+          class="px-4 h-8 flex items-center justify-center rounded-full bg-primary hover:bg-secondary shadow transition-colors text-white text-sm"
           @click="handleSend"
         >
           发送
+        </button>
+        <button
+          class="px-4 h-8 flex items-center justify-center rounded-full bg-gray-500 hover:bg-gray-600 shadow transition-colors text-white text-sm"
+          @click="$emit('clear-messages')"
+        >
+          清屏
         </button>
       </div>
     </div>
@@ -28,7 +31,7 @@ import { ref } from 'vue'
 
 const input = ref('')
 
-const emit = defineEmits(['send-message'])
+const emit = defineEmits(['send-message', 'clear-messages'])
 
 const handleSend = () => {
   if (input.value.trim()) {

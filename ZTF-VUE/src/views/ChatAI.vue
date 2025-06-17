@@ -11,7 +11,7 @@
         <ChatHeader @new-chat="handleTopicChat" />  <!--顶部标题栏-->
         <ChatContainer :messages="messages" />  <!--消息列表-->
         <div class="mt-auto pb-6 px-6">
-          <ChatInput @send-message="handleSendMessage" /> <!--底部输入框-->
+          <ChatInput @send-message="handleSendMessage" @clear-messages="handleClearMessages" /> <!--底部输入框-->
         </div>
       </main>
     </div>
@@ -154,6 +154,11 @@ const handleTopicChat = async (topic: string) => {
   } catch (error) {
     console.error('创建话题会话失败:', error)
   }
+}
+
+// 清空消息
+const handleClearMessages = () => {
+  messages.value = []
 }
 
 // 发送消息
