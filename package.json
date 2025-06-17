@@ -1,0 +1,21 @@
+{
+  "name": "ai_ztf_program",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wendychoi1/ai_ztf_program.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wendychoi1/ai_ztf_program/issues"
+  },
+  "homepage": "https://github.com/wendychoi1/ai_ztf_program#readme",
+  "description": ""
+}

@@ -1,31 +1,47 @@
 <template>
-  <div class="p-6 border-b border-gray-200">
-    <h1 class="text-2xl font-bold text-ink">与邹韬奋聊一聊</h1>
-
-    <div class="mt-4 flex space-x-3 overflow-x-auto pb-2">
-      <button v-for="topic in topics"
-              :key="topic"
-              class="flex-shrink-0 bg-white hover:bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl whitespace-nowrap transition-colors"
-              @click="selectTopic(topic)">
-        {{ topic }}
-      </button>
+  <div class="border-b border-gray-200 bg-white">
+    <div class="px-6 py-4">
+      <div class="flex items-center space-x-4 overflow-x-auto pb-2">
+        <button v-for="topic in topics"
+                :key="topic"
+                class="flex-shrink-0 px-4 py-2 rounded-xl whitespace-nowrap transition-colors"
+                :class="[
+                  selectedTopic === topic
+                    ? 'bg-blue-500 text-white border-blue-500'
+                    : 'bg-white hover:bg-gray-50 border border-gray-200'
+                ]"
+                @click="handleTopicClick(topic)">
+          {{ topic }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
-
+<!-- 话题内容列表 -->
 <script setup lang="ts">
 import { ref } from 'vue'
 
-const topics = ref([
-  '七君子事件',
-  '《生活》周刊',
+const topics = [
+  '邹韬奋生平',
   '生活书店',
-  '职业选择',
-  '少年时代',
-  '英语学习'
-])
+  '七君子事件',
+  '新闻思想',
+  '出版事业',
+  '教育理念',
+  '儿童',
+  '青年',
+  '老年'
+]
 
-const selectTopic = (topic: string) => {
-  // 实现选择话题的逻辑
+const selectedTopic = ref('')
+
+const emit = defineEmits<{
+  (e: 'new-chat', topic: string): void
+}>()
+
+const handleTopicClick = (topic: string) => {
+  selectedTopic.value = topic
+  console.log('Selected topic:', topic)
+  emit('new-chat', topic)
 }
 </script>

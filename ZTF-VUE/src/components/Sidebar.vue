@@ -1,81 +1,69 @@
 <template>
-  <aside class="w-[240px] bg-white border-r border-gray-200 flex flex-col h-[calc(100vh-60px)] sidebar-transition">
-    <div class="p-4 border-b border-gray-200">
-      <button class="w-full bg-primary hover:bg-secondary text-white py-2 px-4 !rounded-button whitespace-nowrap" @click="createNewChat">
-        <i class="fas fa-plus mr-2"></i> 新对话
-      </button>
-    </div>
-    
-    <div class="flex-1 overflow-y-auto">
-      <div v-for="(group, index) in chatGroups" :key="index" class="p-4 space-y-2">
-        <div class="text-sm text-gray-500 mb-2">{{ group.title }}</div>
-        
-        <button v-for="chat in group.chats" 
-                :key="chat.id"
-                class="w-full text-left p-2 rounded hover:bg-gray-100 transition-colors flex items-center"
-                @click="selectChat(chat.id)">
-          <i class="fas fa-comment-dots text-gray-400 mr-2"></i>
-          <span class="truncate">{{ chat.title }}</span>
+  <aside class="w-64 bg-white border-r border-gray-200">
+    <div class="h-full flex flex-col">
+      <div class="p-4 border-b border-gray-200">
+        <button
+          @click="$emit('new-chat')"
+          class="w-full py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+        >
+          新建会话
         </button>
       </div>
-    </div>
-    
-    <div class="p-4 border-t border-gray-200">
-      <button class="text-gray-500 hover:text-primary transition-colors flex items-center" @click="toggleSidebar">
-        <i class="fas fa-chevron-left mr-2"></i>
-        <span>收起边栏</span>
-      </button>
+      <div class="flex-1 overflow-y-auto">
+        <div v-if="chatRecords.length === 0" class="p-4 text-gray-500 text-center">
+          暂无会话记录
+        </div>
+        <div v-else class="space-y-1">
+          <div
+            v-for="record in chatRecords"
+            :key="record.id"
+            class="p-3 hover:bg-gray-100 cursor-pointer transition-colors border-b border-gray-100"
+            @click="$emit('select-chat', record.id)"
+          >
+            <div class="text-sm font-medium truncate">
+              {{ record.title }}
+              <span v-if="record.topic" class="ml-1 text-xs text-primary">[{{ record.topic }}]</span>
+            </div>
+            <div class="text-xs text-gray-500 mt-1">
+              {{ formatTime(record.timestamp) }}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+// 定义组件名称
+defineOptions({
+  name: 'ChatSidebar'
+})
 
-interface Chat {
-  id: number
+interface ChatRecord {
+  id: string
   title: string
+  timestamp: Date
+  user_id: string
+  topic?: string
 }
 
-interface ChatGroup {
-  title: string
-  chats: Chat[]
-}
+defineProps<{
+  chatRecords: ChatRecord[]
+}>()
 
-const chatGroups = ref<ChatGroup[]>([
-  {
-    title: '今天',
-    chats: [
-      { id: 1, title: '关于生活书店的创办历程' },
-      { id: 2, title: '七君子事件的详细经过' },
-      { id: 3, title: '邹韬奋的英语学习方法' }
-    ]
-  },
-  {
-    title: '昨天',
-    chats: [
-      { id: 4, title: '《生活》周刊的编辑理念' },
-      { id: 5, title: '邹韬奋的少年时代' }
-    ]
-  },
-  {
-    title: '更早',
-    chats: [
-      { id: 6, title: '职业选择与人生规划' },
-      { id: 7, title: '邹韬奋的新闻思想' }
-    ]
-  }
-])
+defineEmits<{
+  (e: 'new-chat'): void
+  (e: 'select-chat', id: string): void
+}>()
 
-const createNewChat = () => {
-  // 实现创建新对话的逻辑
+// 格式化时间
+const formatTime = (date: Date) => {
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date)
 }
-
-const selectChat = (chatId: number) => {
-  // 实现选择对话的逻辑
-}
-
-const toggleSidebar = () => {
-  // 实现收起/展开侧边栏的逻辑
-}
-</script> 
+</script>
