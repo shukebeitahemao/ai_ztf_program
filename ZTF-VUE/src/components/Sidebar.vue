@@ -1,28 +1,32 @@
 <template>
-  <aside class="w-64 bg-white border-r border-gray-200 h-full">
-    <div class="p-4">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-semibold text-gray-800">聊天记录</h2>
+  <aside class="w-64 bg-white border-r border-gray-200">
+    <div class="h-full flex flex-col">
+      <div class="p-4 border-b border-gray-200">
         <button
-          @click="handleNewChat"
-          class="text-primary hover:text-secondary transition-colors"
-          title="新建对话"
+          @click="$emit('new-chat')"
+          class="w-full py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
         >
-          <i class="fas fa-plus"></i>
+          新建会话
         </button>
       </div>
-      <div v-if="chatRecords.length === 0" class="text-gray-500 text-sm">
-        暂无聊天记录
-      </div>
-      <div v-else class="space-y-2">
-        <div
-          v-for="record in chatRecords"
-          :key="record.id"
-          class="p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-        >
-          <div class="text-sm font-medium text-gray-800">{{ record.title }}</div>
-          <div class="text-xs text-gray-500 mt-1">
-            {{ formatTime(record.timestamp) }}
+      <div class="flex-1 overflow-y-auto">
+        <div v-if="chatRecords.length === 0" class="p-4 text-gray-500 text-center">
+          暂无会话记录
+        </div>
+        <div v-else class="space-y-1">
+          <div
+            v-for="record in chatRecords"
+            :key="record.id"
+            class="p-3 hover:bg-gray-100 cursor-pointer transition-colors border-b border-gray-100"
+            @click="$emit('select-chat', record.id)"
+          >
+            <div class="text-sm font-medium truncate">
+              {{ record.title }}
+              <span v-if="record.topic" class="ml-1 text-xs text-primary">[{{ record.topic }}]</span>
+            </div>
+            <div class="text-xs text-gray-500 mt-1">
+              {{ formatTime(record.timestamp) }}
+            </div>
           </div>
         </div>
       </div>
@@ -31,38 +35,35 @@
 </template>
 
 <script setup lang="ts">
+// 定义组件名称
+defineOptions({
+  name: 'ChatSidebar'
+})
 
-import { getOrCreateUID } from '../utils/user'
-// 定义聊天记录的类型
 interface ChatRecord {
   id: string
   title: string
   timestamp: Date
-  uid: string
+  user_id: string
+  topic?: string
 }
-// 定义属性
-const props = defineProps<{
+
+defineProps<{
   chatRecords: ChatRecord[]
 }>()
 
-// 定义事件
-const emit = defineEmits<{
+defineEmits<{
   (e: 'new-chat'): void
+  (e: 'select-chat', id: string): void
 }>()
 
 // 格式化时间
 const formatTime = (date: Date) => {
   return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit'
   }).format(date)
-}
-
-// 新建对话
-const handleNewChat = () => {
-  emit('new-chat')
 }
 </script>

@@ -24,15 +24,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import WebHeader from '../components/WebHeader.vue'
-import { initializeUserId } from '../api/ftbAPI'
+import { getUserId } from '../api/ftbAPI'
 
 const userId = ref('')
 
 // 获取用户ID
 onMounted(async () => {
   try {
-    userId.value = await initializeUserId()
-    console.log('用户ID:', userId.value)
+    userId.value = await getUserId()
   } catch (error) {
     console.error('获取用户ID失败:', error)
   }

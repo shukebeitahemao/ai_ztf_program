@@ -2,28 +2,106 @@ import axios from 'axios'
 
 const API_BASE_URL = 'http://localhost:3000'
 
+interface CreateUserResponse {
+  user_id: string;
+}
+
+interface CreateSessionResponse {
+  user_id: string;
+  session_id: string;
+}
+
+interface SendMessageResponse {
+  sessionid: string;
+  system_msg: string;
+}
+
 /**
- * 传输userUID到后端
- * 功能：用户首次访问时，向后端注册用户ID
- * 参数：
- *   - uid: 用户唯一标识符，格式为 'uid_' + 随机字符串
+ * 获取用户ID
+ * 功能：从本地storage获取用户ID，如果不存在则从后端获取新的用户ID
  * 返回值：
- *   - Promise: 包含服务器响应数据
+ *   - Promise<string>: 返回用户ID
  * 错误处理：
- *   - 捕获并记录注册失败错误
+ *   - 捕获并记录获取失败错误
  */
-export const sendUserUID = async (uid: string) => {
+export const getUserId = async (): Promise<string> => {
+  const STORAGE_KEY = 'ztf_user_id'
   try {
-    const response = await axios.get(`${API_BASE_URL}/user/register`, {
-      params: {
-        uid
-      }
-    })
-    return response.data
+    // 检查本地storage中是否存在用户ID
+    /* 正式环境
+    const storedUserId = localStorage.getItem(STORAGE_KEY)
+    */
+    // 测试环境
+    let storedUserId = localStorage.getItem(STORAGE_KEY)
+    // 测试用：设置默认值
+    storedUserId = '123'
+
+    if (storedUserId) {
+      return storedUserId
+    }
+    // 如果本地没有用户ID，从后端获取新的用户ID
+    const response = await axios.get<CreateUserResponse>(`${API_BASE_URL}/create_user`)
+    const { user_id } = response.data
+
+    // 将新的用户ID保存到本地storage
+    localStorage.setItem(STORAGE_KEY, user_id)
+    return user_id
   } catch (error) {
-    console.error('注册用户失败:', error)
+    console.error('获取用户ID失败:', error)
     throw error
   }
+}
+
+/**
+ * 创建新的会话
+ * 功能：创建新的聊天会话，获取会话ID
+ * 参数：
+ *   - user_id: 用户ID
+ * 返回值：
+ *   - Promise<CreateSessionResponse>: 返回用户ID和会话ID
+ */
+export const createNewSession = async (user_id: string): Promise<CreateSessionResponse> => {
+  const STORAGE_KEY = 'ztf_session_id'
+
+  try {
+    /* 正式环境
+    const response = await axios.get<CreateSessionResponse>(`${API_BASE_URL}/chat/create_new_chat`, {
+      params: {
+        user_id
+      }
+    })
+
+    // 将会话ID保存到本地storage
+    localStorage.setItem(STORAGE_KEY, response.data.session_id)
+    return response.data
+    */
+
+    // 测试环境
+    const testSessionId = `session_${Date.now()}`
+    const testResponse: CreateSessionResponse = {
+      user_id: user_id,
+      session_id: testSessionId
+    }
+
+    // 将会话ID保存到本地storage
+    localStorage.setItem(STORAGE_KEY, testResponse.session_id)
+    return testResponse
+
+  } catch (error) {
+    console.error('创建会话失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 获取当前会话ID
+ * 功能：从本地storage获取当前会话ID
+ * 返回值：
+ *   - string | null: 返回会话ID，如果不存在则返回null
+ */
+export const getCurrentSessionId = (): string | null => {
+  const STORAGE_KEY = 'ztf_session_id'
+  return localStorage.getItem(STORAGE_KEY)
 }
 
 /**
@@ -61,31 +139,43 @@ export const createNewChat = async (chatTitle: string, topic: string = '') => {
 }
 
 /**
- * 发送用户消息到后端
+ * 发送消息到后端
  * 功能：发送用户消息并获取系统回复
  * 参数：
- *   - message: 用户输入的消息内容
- *   - chatId: 当前聊天会话ID
- *   - uid: 用户ID
- *   - timestamp: 消息发送时间
+ *   - user_msg: 用户输入的消息内容
+ *   - session_id: 当前会话ID
+ *   - user_id: 用户ID
+ *   - story_type: 话题类型（可选）
  * 返回值：
- *   - Promise: 包含服务器响应数据，其中reply字段为系统回复
- * 错误处理：
- *   - 捕获并记录发送失败错误
- * 说明：
- *   - 如果服务器没有返回reply，前端会显示默认消息"后端已收到您的消息"
+ *   - Promise<SendMessageResponse>: 返回会话ID和系统回复
  */
-export const sendMessage = async (message: string, chatId: string, uid: string, timestamp: Date) => {
+export const sendMessage = async (
+  user_msg: string,
+  session_id: string,
+  user_id: string,
+  story_type: string = ''
+): Promise<SendMessageResponse> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/chat/send_message`, {
+    /* 正式环境
+    const response = await axios.get<SendMessageResponse>(`${API_BASE_URL}/chat`, {
       params: {
-        message,
-        chatId,
-        uid,
-        timestamp: timestamp.toISOString()
+        user_id,
+        session_id,
+        user_msg,
+        story_type
       }
     })
     return response.data
+    */
+
+    // 测试环境
+    // 模拟后端响应
+    const testResponse: SendMessageResponse = {
+      sessionid: session_id,
+      system_msg: `测试回复: 收到消息"${user_msg}"，会话ID为${session_id}${story_type ? '，话题为' + story_type : ''}`
+    }
+    return testResponse
+
   } catch (error) {
     console.error('发送消息失败:', error)
     throw error

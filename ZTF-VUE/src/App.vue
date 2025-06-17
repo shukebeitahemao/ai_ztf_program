@@ -18,6 +18,8 @@ interface Message {
 
 const messages = ref<Message[]>([])
 
+
+
 const handleSendMessage = (content: string) => {
   // 添加用户消息
   const userMessage: Message = {

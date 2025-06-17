@@ -13,10 +13,10 @@
           <i class="fas fa-microphone text-gray-500"></i>
         </button>-->
         <button
-          class="w-10 h-10 flex items-center justify-center rounded-full bg-primary hover:bg-secondary shadow transition-colors"
+          class="px-4 h-10 flex items-center justify-center rounded-full bg-primary hover:bg-secondary shadow transition-colors text-white"
           @click="handleSend"
         >
-          <i class="fas fa-paper-plane text-white"></i>
+          发送
         </button>
       </div>
     </div>
