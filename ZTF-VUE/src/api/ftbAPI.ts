@@ -15,6 +15,32 @@ interface SendMessageResponse {
   sessionid: string;
   system_msg: string;
 }
+/**
+ * 加载特定会话的历史记录
+ * 功能：根据会话ID和用户ID加载特定会话的历史记录
+ * 参数：
+ *   - user_id: 用户ID
+ *   - session_id: 会话ID
+ * 返回值：
+ *   - Promise<LoadSessionResponse>: 返回会话历史记录
+ */
+interface LoadSessionResponse {
+  msg: [{
+    user_id: string;
+    session_id: string;
+    history: string;
+  }]
+}
+
+interface HistorySession {
+  session_id: string;
+  abstract: string;
+  update_time: string;
+}
+
+interface LoadHistoryResponse {
+  msg: HistorySession[];
+}
 
 /**
  * 获取用户ID
@@ -178,6 +204,85 @@ export const sendMessage = async (
 
   } catch (error) {
     console.error('发送消息失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 加载特定会话的历史记录
+ * 功能：根据会话ID和用户ID加载特定会话的历史记录
+ * 参数：
+ *   - user_id: 用户ID
+ *   - session_id: 会话ID
+ * 返回值：
+ *   - Promise<LoadSessionResponse>: 返回会话历史记录
+ */
+export const loadSpecificSession = async (
+  user_id: string,
+  session_id: string
+): Promise<LoadSessionResponse> => {
+  try {
+    /* 正式环境
+    const response = await axios.get<LoadSessionResponse>(`${API_BASE_URL}/load_specific_session`, {
+      params: {
+        user_id,
+        session_id
+      }
+    })
+    return response.data
+    */
+
+    // 测试环境
+    // 模拟后端响应
+    const testResponse: LoadSessionResponse = {
+      msg: [{
+        user_id: user_id,
+        session_id: session_id,
+        history: JSON.stringify([
+          { role: 'user', content: '测试消息1' },
+          { role: 'assistant', content: '测试回复1' },
+          { role: 'user', content: '测试消息2' },
+          { role: 'assistant', content: '测试回复2' }
+        ])
+      }]
+    }
+    return testResponse
+
+  } catch (error) {
+    console.error('加载会话历史记录失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 加载用户历史会话记录
+ */
+export const loadHistory = async (user_id: string): Promise<LoadHistoryResponse> => {
+  try {
+    /* 正式环境
+    const response = await axios.get<LoadHistoryResponse>(`${API_BASE_URL}/load_history`, {
+      params: { user_id }
+    })
+    return response.data
+    */
+
+    // 测试环境
+    return {
+      msg: [
+        {
+          session_id: 'test_session_1',
+          abstract: '邹韬奋的教育理念探讨',
+          update_time: '2024-03-11T10:00:00Z'
+        },
+        {
+          session_id: 'test_session_2',
+          abstract: '关于生活书店的对话',
+          update_time: '2024-03-11T09:00:00Z'
+        }
+      ]
+    }
+  } catch (error) {
+    console.error('加载历史记录失败:', error)
     throw error
   }
 }
