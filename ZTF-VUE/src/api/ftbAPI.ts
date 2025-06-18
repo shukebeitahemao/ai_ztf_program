@@ -46,6 +46,10 @@ interface DeleteSessionResponse {
   msg: string;
 }
 
+interface SaveUserMsgResponse {
+  msg: string;
+}
+
 /**
  * 获取用户ID
  * 功能：从本地storage获取用户ID，如果不存在则从后端获取新的用户ID
@@ -119,51 +123,6 @@ export const createNewSession = async (user_id: string): Promise<CreateSessionRe
 
   } catch (error) {
     console.error('创建会话失败:', error)
-    throw error
-  }
-}
-
-/**
- * 获取当前会话ID
- * 功能：从本地storage获取当前会话ID
- * 返回值：
- *   - string | null: 返回会话ID，如果不存在则返回null
- */
-export const getCurrentSessionId = (): string | null => {
-  const STORAGE_KEY = 'ztf_session_id'
-  return localStorage.getItem(STORAGE_KEY)
-}
-
-/**
- * 传输会话ID到后端，后端根据会话ID查询会话记录，并返回历史会话记录，如果会话记录不存在，则创建新的会话
- */
-
-/**
- * 传输会话ID和删除指令到后端，后端针对会话ID删除历史会话记录
- */
-
-/**
- * 创建新的聊天记录
- * 功能：创建新的聊天会话，并记录话题信息
- * 参数：
- *   - chatTitle: 聊天标题，格式为 uid_YYYYMMDD_HHMM
- *   - topic: 聊天话题，可选参数
- * 返回值：
- *   - Promise: 包含服务器响应数据
- * 错误处理：
- *   - 捕获并记录创建失败错误
- */
-export const createNewChat = async (chatTitle: string, topic: string = '') => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/chat/create_new_chat`, {
-      params: {
-        title: chatTitle,
-        topic
-      }
-    })
-    return response.data
-  } catch (error) {
-    console.error('创建聊天记录失败:', error)
     throw error
   }
 }
@@ -314,3 +273,63 @@ export const deleteSession = async (user_id: string, session_id: string): Promis
   }
 }
 
+/**
+ * 自动保存用户消息
+ * 功能：在用户关闭页面或浏览器时自动保存用户消息
+ * 参数：
+ *   - user_id: 用户ID
+ * 返回值：
+ *   - Promise<SaveUserMsgResponse>: 返回保存状态信息
+ */
+export const saveUserMsg = async (user_id: string): Promise<SaveUserMsgResponse> => {
+  try {
+    const response = await axios.get<SaveUserMsgResponse>(`${API_BASE_URL}/chat/save_usermsg`, {
+      params: {
+        userid: user_id
+      }
+    })
+    return response.data
+  } catch (error) {
+    console.error('保存用户消息失败:', error)
+    throw error
+  }
+}
+
+
+/**
+
+ * 获取当前会话ID
+ * 功能：从本地storage获取当前会话ID
+ * 返回值：
+ *   - string | null: 返回会话ID，如果不存在则返回null
+
+export const getCurrentSessionId = (): string | null => {
+  const STORAGE_KEY = 'ztf_session_id'
+  return localStorage.getItem(STORAGE_KEY)
+}
+
+ * 创建新的聊天记录
+ * 功能：创建新的聊天会话，并记录话题信息
+ * 参数：
+ *   - chatTitle: 聊天标题，格式为 uid_YYYYMMDD_HHMM
+ *   - topic: 聊天话题，可选参数
+ * 返回值：
+ *   - Promise: 包含服务器响应数据
+ * 错误处理：
+ *   - 捕获并记录创建失败错误
+
+export const createNewChat = async (chatTitle: string, topic: string = '') => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/chat/create_new_chat`, {
+      params: {
+        title: chatTitle,
+        topic
+      }
+    })
+    return response.data
+  } catch (error) {
+    console.error('创建聊天记录失败:', error)
+    throw error
+  }
+}
+*/

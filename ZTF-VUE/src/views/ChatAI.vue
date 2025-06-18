@@ -27,7 +27,7 @@ import Sidebar from '../components/Sidebar.vue'
 import ChatHeader from '../components/ChatHeader.vue'
 import ChatContainer from '../components/ChatContainer.vue'
 import ChatInput from '../components/ChatInput.vue'
-import { getUserId, createNewSession, sendMessage, loadSpecificSession, loadHistory, deleteSession } from '../api/ftbAPI'
+import { getUserId, createNewSession, sendMessage, loadSpecificSession, loadHistory, deleteSession, saveUserMsg } from '../api/ftbAPI'
 
 //消息结构
 interface Message {
@@ -92,6 +92,17 @@ onMounted(async () => {
 
     console.log('sessionId:', currentSessionId.value)
     console.log('当前会话记录数:', chatRecords.value.length)
+
+    // 添加页面关闭时的自动保存功能
+    window.addEventListener('beforeunload', async () => {
+      try {
+        if (userId.value) {
+          await saveUserMsg(userId.value)
+        }
+      } catch (error) {
+        console.error('自动保存失败:', error)
+      }
+    })
   } catch (error) {
     console.error('初始化失败:', error)
   }

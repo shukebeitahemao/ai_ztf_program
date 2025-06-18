@@ -2,13 +2,14 @@
 //import { RouterLink, RouterView } from 'vue-router'
 //import HelloWorld from './components/HelloWorld.vue'
 import { ref } from 'vue'
+/**
 import WebHeader from './components/WebHeader.vue'
 import Sidebar from './components/Sidebar.vue'
 import ChatHeader from './components/ChatHeader.vue'
 import ChatContainer from './components/ChatContainer.vue'
 import ChatInput from './components/ChatInput.vue'
 import { RouterView } from 'vue-router'
-
+*/
 interface Message {
   id: number
   content: string
