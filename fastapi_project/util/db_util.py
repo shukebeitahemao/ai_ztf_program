@@ -3,11 +3,11 @@ from psycopg2 import Error
 import re 
 import os
 import chromadb
-from llama_index import VectorStoreIndex, SimpleDirectoryReader, DocumentSummaryIndex
-from llama_index import PromptTemplate, get_response_synthesizer, load_index_from_storage
-from llama_index import Document, StorageContext
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, DocumentSummaryIndex
+from llama_index.core import PromptTemplate, get_response_synthesizer, load_index_from_storage
+from llama_index.core import Document, StorageContext
 from llama_index.core.settings import Settings
-from llama_index.vector_stores_chroma import ChromaVectorStore
+from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.deepseek import DeepSeek
 from llama_index.core.node_parser import SentenceSplitter

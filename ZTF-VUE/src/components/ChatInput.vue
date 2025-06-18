@@ -28,12 +28,13 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { getUserId, getCurrentSessionId, sendMessage, createNewSession } from '@/api/ftbAPI'
 
 const input = ref('')
 
-const emit = defineEmits(['send-message', 'clear-messages'])
+const emit = defineEmits(['send-message', 'system-response', 'clear-messages'])
 
-const handleSend = () => {
+const handleSend = async () => {
   if (input.value.trim()) {
     // const response = await fetch('http://localhost:8000/chat', {
     //   method: 'POST',
@@ -52,20 +53,49 @@ const handleSend = () => {
 // msg:\[
 // {'最后聊天时间':'2020-01-01 12:00:00'
 // '主题概述':'询问邹韬奋的生平',
-// ‘session_id’：‘sdwefasfwsefew’,
+// 'session_id'：'sdwefasfwsefew',
 // }，
 
 // {'最后聊天时间':'2020-01-01 12:00:00'
 // '主题概述':'询问邹韬奋的生平',
-// ‘session_id’：‘sdwefasfwsefew’,
+// 'session_id'：'sdwefasfwsefew',
 // }
 
 // \]
 // }
 //     }
-    console.log('收到后端响应:', data)
-    emit('send-message', input.value)
-    input.value = ''
+    try {
+      const user_id_get = await getUserId()
+      let session_id_get = await getCurrentSessionId()
+      
+      // 如果没有session_id，先创建新会话
+      if (!session_id_get) {
+        const sessionData = await createNewSession(user_id_get)
+        session_id_get = sessionData.session_id
+      }
+      
+      // 发送用户消息
+      const userMessage = input.value
+      emit('send-message', userMessage)
+      
+      // 获取系统回复
+      const data = await sendMessage(
+        userMessage,
+        session_id_get!,  // 使用非空断言，因为上面已经确保有值
+        user_id_get,
+        'test'
+      )
+      
+      console.log('收到后端响应:', data)
+      
+      // 发送系统回复给父组件
+      emit('system-response', data.system_msg)
+      
+      input.value = ''
+    } catch (error) {
+      console.error('发送消息失败:', error)
+      // 可以添加错误提示
+    }
   }
 }
 </script>

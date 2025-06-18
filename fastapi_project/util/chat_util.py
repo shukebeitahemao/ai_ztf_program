@@ -1,8 +1,8 @@
 import re 
 import os
-from llama_index import VectorStoreIndex, SimpleDirectoryReader, DocumentSummaryIndex
-from llama_index import PromptTemplate, get_response_synthesizer
-from llama_index import ServiceContext
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, DocumentSummaryIndex
+from llama_index.core import PromptTemplate, get_response_synthesizer
+from llama_index.core.settings import Settings
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.deepseek import DeepSeek
@@ -63,29 +63,51 @@ def split_txt_files(source_file='fastapi_project//chat//txt_file', output_file='
 #split_txt_files()
 
 #初始化llamaindex相关配置,.默认使用deepseek
-def initialize_llamaindex(deepseekapi):
+def initialize_llamaindex(deepseekapi, offline_mode=True):
     # 初始化 DeepSeek 客户端
     llm = DeepSeek(
         api_key=deepseekapi,  # 替换为你的 DeepSeek API key
         model="deepseek-chat"
     )
-    # 初始化 HuggingFace 嵌入模型
-    embed_model = HuggingFaceEmbedding(
-        #这是北京智源人工智能研究院（BAAI）开发的开源模型
-        model_name="BAAI/bge-large-zh-v1.5"
-    )
+    
+    if offline_mode:
+        print("使用离线模式，跳过HuggingFace嵌入模型初始化")
+        # 使用简单的文本嵌入模型
+        from llama_index.embeddings.openai import OpenAIEmbedding
+        embed_model = OpenAIEmbedding()
+        print("使用OpenAI嵌入模型")
+    else:
+        # 尝试初始化 HuggingFace 嵌入模型，如果失败则使用备用方案
+        try:
+            # 初始化 HuggingFace 嵌入模型
+            embed_model = HuggingFaceEmbedding(
+                #这是北京智源人工智能研究院（BAAI）开发的开源模型
+                model_name="BAAI/bge-large-zh-v1.5"
+            )
+            print("成功加载 BAAI/bge-large-zh-v1.5 嵌入模型")
+        except Exception as e:
+            print(f"加载 BAAI/bge-large-zh-v1.5 模型失败: {e}")
+            print("尝试使用备用嵌入模型...")
+            
+            try:
+                # 尝试使用较小的中文模型
+                embed_model = HuggingFaceEmbedding(
+                    model_name="sentence-transformers/all-MiniLM-L6-v2"
+                )
+                print("成功加载 all-MiniLM-L6-v2 嵌入模型")
+            except Exception as e2:
+                print(f"加载备用模型也失败: {e2}")
+                print("使用默认嵌入模型...")
+                # 使用llamaindex的默认嵌入模型
+                from llama_index.embeddings.openai import OpenAIEmbedding
+                embed_model = OpenAIEmbedding()
+                print("使用默认OpenAI嵌入模型")
 
-    # 替换 ServiceContext 创建
-    ServiceContext.llm = llm
-    ServiceContext.embed_model = embed_model
+    # 设置全局配置
+    Settings.llm = llm
+    Settings.embed_model = embed_model
 
-    # # 初始化 Chroma 客户端
-    # chroma_client = chromadb.Client()
-    # #新建或者连接已有的choroma
-    # chroma_collection = chroma_client.get_or_create_collection(chroma_collection_name)
-    # # 创建向量存储
-    # vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
-    return llm,embed_model
+    return llm, embed_model
 
 def show_doc_summaries(index: DocumentSummaryIndex):
     """打印索引中每篇文档的摘要"""
@@ -206,19 +228,3 @@ def get_paras_from_kws(kws):
 
 if __name__=="__main__":
     print(settings.DEEPSEEK_API)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
