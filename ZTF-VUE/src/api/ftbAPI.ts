@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:8000'
+const API_BASE_URL = 'http://localhost:3000'
 
 interface CreateUserResponse {
   user_id: string;
@@ -34,7 +34,7 @@ export const getUserId = async (): Promise<string> => {
     // 测试环境
     let storedUserId = localStorage.getItem(STORAGE_KEY)
     // 测试用：设置默认值
-    //storedUserId = '123'
+    storedUserId = '123'
 
     if (storedUserId) {
       return storedUserId
@@ -42,7 +42,6 @@ export const getUserId = async (): Promise<string> => {
     // 如果本地没有用户ID，从后端获取新的用户ID
     const response = await axios.get<CreateUserResponse>(`${API_BASE_URL}/create_user`)
     const { user_id } = response.data
-    console.log('获取用户ID成功:', user_id)
 
     // 将新的用户ID保存到本地storage
     localStorage.setItem(STORAGE_KEY, user_id)
@@ -65,29 +64,28 @@ export const createNewSession = async (user_id: string): Promise<CreateSessionRe
   const STORAGE_KEY = 'ztf_session_id'
 
   try {
-    const user_id_get = await getUserId()
+    /* 正式环境
     const response = await axios.get<CreateSessionResponse>(`${API_BASE_URL}/chat/create_new_chat`, {
       params: {
-        user_id: user_id_get
+        user_id
       }
     })
 
     // 将会话ID保存到本地storage
     localStorage.setItem(STORAGE_KEY, response.data.session_id)
-    console.log('创建会话成功:', response.data)
     return response.data
-
+    */
 
     // 测试环境
-    // const testSessionId = `session_${Date.now()}`
-    // const testResponse: CreateSessionResponse = {
-    //   user_id: user_id,
-    //   session_id: testSessionId
-    // }
+    const testSessionId = `session_${Date.now()}`
+    const testResponse: CreateSessionResponse = {
+      user_id: user_id,
+      session_id: testSessionId
+    }
 
     // 将会话ID保存到本地storage
-    // localStorage.setItem(STORAGE_KEY, testResponse.session_id)
-    // return testResponse
+    localStorage.setItem(STORAGE_KEY, testResponse.session_id)
+    return testResponse
 
   } catch (error) {
     console.error('创建会话失败:', error)
@@ -125,20 +123,20 @@ export const getCurrentSessionId = (): string | null => {
  * 错误处理：
  *   - 捕获并记录创建失败错误
  */
-// export const createNewChat = async (chatTitle: string, topic: string = '') => {
-//   try {
-//     const response = await axios.get(`${API_BASE_URL}/chat/create_new_chat`, {
-//       params: {
-//         title: chatTitle,
-//         topic
-//       }
-//     })
-//     return response.data
-//   } catch (error) {
-//     console.error('创建聊天记录失败:', error)
-//     throw error
-//   }
-// }
+export const createNewChat = async (chatTitle: string, topic: string = '') => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/chat/create_new_chat`, {
+      params: {
+        title: chatTitle,
+        topic
+      }
+    })
+    return response.data
+  } catch (error) {
+    console.error('创建聊天记录失败:', error)
+    throw error
+  }
+}
 
 /**
  * 发送消息到后端
@@ -155,19 +153,29 @@ export const sendMessage = async (
   user_msg: string,
   session_id: string,
   user_id: string,
-  story_type: string = 'test'
+  story_type: string = ''
 ): Promise<SendMessageResponse> => {
   try {
-    //正式环境
+    /* 正式环境
     const response = await axios.get<SendMessageResponse>(`${API_BASE_URL}/chat`, {
       params: {
-        userid: user_id,
-        sessionid: session_id,
+        user_id,
+        session_id,
         user_msg,
         story_type
       }
     })
     return response.data
+    */
+
+    // 测试环境
+    // 模拟后端响应
+    const testResponse: SendMessageResponse = {
+      sessionid: session_id,
+      system_msg: `测试回复: 收到消息"${user_msg}"，会话ID为${session_id}${story_type ? '，话题为' + story_type : ''}`
+    }
+    return testResponse
+
   } catch (error) {
     console.error('发送消息失败:', error)
     throw error

@@ -1,12 +1,12 @@
-from .util.chat_util import (
+from fastapi_project.util.chat_util import (
     initialize_llamaindex,
     get_user_keywords,
     get_es_docs,
     find_paragraphs_with_keyword,
     get_paras_from_kws
 )
-from .settings import settings
-from .util import db_util
+from fastapi_project.settings import settings
+from fastapi_project.util import db_util
 import uuid
 import json
 # 初始化llm和embed模型
