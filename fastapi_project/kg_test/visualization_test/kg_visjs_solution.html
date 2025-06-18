@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>知识图谱可视化 (vis.js 最终解决方案)</title>
+    <!-- 引入 vis-network，这是 vis.js 的核心网络绘图部分 -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style type="text/css">
+        html,
+        body {
+            font: 16pt arial;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #graph-container {
+            width: 100%;
+            height: 100%;
+            border: 1px solid lightgray;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="graph-container"></div>
+
+    <!-- 引入 Neo4j 官方驱动 -->
+    <script src="https://unpkg.com/neo4j-driver"></script>
+    <script type="text/javascript">
+        async function drawGraph() {
+            // --- 最终确认的连接配置 ---
+            const URI = "neo4j://localhost:7687";
+            const USER = "neo4j";
+            const PASSWORD = "wzdshjw123";
+            const DATABASE = "neo4j";
+            const CYPHER = "MATCH (n)-[r]-(m) RETURN n, r, m";
+
+            // --- 数据处理与转换 ---
+            const driver = neo4j.driver(URI, neo4j.auth.basic(USER, PASSWORD));
+            const session = driver.session({ database: DATABASE });
+
+            try {
+                const result = await session.run(CYPHER);
+
+                const nodes = new vis.DataSet();
+                const edges = new vis.DataSet();
+                const nodeIds = new Set();
+
+                result.records.forEach(record => {
+                    const n = record.get('n');
+                    const r = record.get('r');
+                    const m = record.get('m');
+
+                    // 添加起点（如果尚未添加）
+                    if (!nodeIds.has(n.identity.low)) {
+                        nodeIds.add(n.identity.low);
+                        nodes.add({
+                            id: n.identity.low,
+                            label: n.properties.name || n.labels.join(', '), // 优先使用 name 属性
+                            group: n.labels[0] // 使用第一个标签作为分组（颜色）
+                        });
+                    }
+
+                    // 添加终点（如果尚未添加）
+                    if (!nodeIds.has(m.identity.low)) {
+                        nodeIds.add(m.identity.low);
+                        edges.add({
+                            id: m.identity.low,
+                            label: m.properties.name || m.labels.join(', '),
+                            group: m.labels[0]
+                        });
+                    }
+
+                    // 添加关系
+                    edges.add({
+                        id: r.identity.low,
+                        from: r.start.low,
+                        to: r.end.low,
+                        label: r.type, // 直接使用关系的类型作为标签
+                        arrows: 'to'
+                    });
+                });
+
+                // --- 使用 vis.js进行渲染 ---
+                const container = document.getElementById('graph-container');
+                const data = { nodes: nodes, edges: edges };
+                const options = {
+                    nodes: {
+                        shape: 'dot',
+                        size: 16
+                    },
+                    physics: {
+                        forceAtlas2Based: {
+                            gravitationalConstant: -26,
+                            centralGravity: 0.005,
+                            springLength: 230,
+                            springConstant: 0.18
+                        },
+                        maxVelocity: 146,
+                        solver: 'forceAtlas2Based',
+                        timestep: 0.35,
+                        stabilization: { iterations: 150 }
+                    },
+                    edges: {
+                        font: {
+                            align: 'middle'
+                        }
+                    }
+                };
+
+                new vis.Network(container, data, options);
+
+            } catch (error) {
+                console.error("渲染图谱时发生错误:", error);
+                document.getElementById('graph-container').innerText = '渲染图谱时发生错误: ' + error.message;
+            } finally {
+                await session.close();
+                await driver.close();
+            }
+        }
+
+        drawGraph();
+    </script>
+</body>
+
+</html>

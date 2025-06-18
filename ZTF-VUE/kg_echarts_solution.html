@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>知识图谱可视化 (ECharts 最终解决方案)</title>
+    <!-- 1. 引入 ECharts 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+        }
+
+        .page-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .header {
+            flex: 0 0 60px;
+            /* 页头固定高度 */
+            border: 1px solid blue;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .content-container {
+            flex-grow: 1;
+            /* 占据剩余所有高度 */
+            display: flex;
+            flex-direction: row;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            /* 主内容区占据大部分宽度 */
+            border: 1px solid blue;
+            position: relative;
+            /* 为ECharts容器提供定位上下文 */
+        }
+
+        .sidebar {
+            flex: 0 0 25%;
+            /* 侧边栏固定宽度 */
+            border: 1px solid blue;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #echarts-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-container">
+        <div class="header">div 1</div>
+        <div class="content-container">
+            <div class="main-content">
+                <div id="echarts-container"></div>
+            </div>
+            <div class="sidebar">div 2</div>
+        </div>
+    </div>
+
+    <!-- 2. 引入 Neo4j 官方驱动 -->
+    <script src="https://unpkg.com/neo4j-driver"></script>
+    <script type="text/javascript">
+        async function drawGraphWithECharts() {
+            // --- 连接与数据获取 ---
+            const URI = "neo4j://localhost:7687";
+            const USER = "neo4j";
+            const PASSWORD = "wzdshjw123";
+            const DATABASE = "neo4j";
+            const CYPHER = "MATCH (n)-[r]-(m) RETURN n, r, m";
+
+            const echartsContainer = document.getElementById('echarts-container');
+            const myChart = echarts.init(echartsContainer);
+            myChart.showLoading();
+
+            try {
+                const driver = neo4j.driver(URI, neo4j.auth.basic(USER, PASSWORD));
+                const session = driver.session({ database: DATABASE });
+                const result = await session.run(CYPHER);
+
+                // --- 数据转换 ---
+                let nodes = [];
+                let links = [];
+                const categories = new Map();
+                const nodeIds = new Set();
+
+                result.records.forEach(record => {
+                    const n = record.get('n');
+                    const r = record.get('r');
+                    const m = record.get('m');
+                    const n_id_str = n.identity.toString();
+                    const m_id_str = m.identity.toString();
+
+                    if (!nodeIds.has(n_id_str)) {
+                        nodeIds.add(n_id_str);
+                        const categoryName = n.labels[0] || 'Unknown';
+                        if (!categories.has(categoryName)) categories.set(categoryName, { name: categoryName });
+                        nodes.push({ id: n_id_str, name: n.properties.name, category: categoryName });
+                    }
+                    if (!nodeIds.has(m_id_str)) {
+                        nodeIds.add(m_id_str);
+                        const categoryName = m.labels[0] || 'Unknown';
+                        if (!categories.has(categoryName)) categories.set(categoryName, { name: categoryName });
+                        nodes.push({ id: m_id_str, name: m.properties.name, category: categoryName });
+                    }
+                    links.push({ source: n_id_str, target: m_id_str, value: r.type });
+                });
+
+                // --- ECharts 配置 ---
+                myChart.hideLoading();
+                const option = {
+                    tooltip: { formatter: (params) => params.dataType === 'edge' ? params.value : params.name },
+                    legend: [{ data: Array.from(categories.keys()) }],
+                    series: [{
+                        type: 'graph',
+                        layout: 'force',
+                        data: nodes,
+                        links: links,
+                        categories: Array.from(categories.values()),
+                        roam: true,
+                        draggable: true,
+                        label: { show: true, position: 'right', formatter: '{b}' },
+                        force: { repulsion: 500, edgeLength: 150 },
+                        edgeSymbol: ['circle', 'arrow'],
+                        edgeSymbolSize: [4, 10],
+                        edgeLabel: {
+                            show: false, // 默认隐藏边的标签
+                            fontSize: 10,
+                            formatter: (params) => params.data.value, // 显示关系的类型
+                        },
+                        emphasis: { // 高亮状态的配置
+                            focus: 'adjacency',
+                            edgeLabel: {
+                                show: true // 鼠标悬浮到节点上时，显示邻接边的标签
+                            }
+                        }
+                    }]
+                };
+                myChart.setOption(option);
+
+                // --- 事件处理 ---
+                let lastClickedEdgeIndex = -1;
+                myChart.on('click', (params) => {
+                    if (params.dataType === 'edge') {
+                        // 如果再次点击了同一条边，则隐藏它
+                        if (lastClickedEdgeIndex === params.dataIndex) {
+                            links[params.dataIndex].lineStyle = { width: 1 };
+                            links[params.dataIndex].edgeLabel = { show: false };
+                            lastClickedEdgeIndex = -1;
+                        } else {
+                            // 恢复上一条被点击的边
+                            if (lastClickedEdgeIndex !== -1) {
+                                links[lastClickedEdgeIndex].lineStyle = { width: 1 };
+                                links[lastClickedEdgeIndex].edgeLabel = { show: false };
+                            }
+                            //突出显示当前点击的边
+                            links[params.dataIndex].lineStyle = { width: 2.5, color: '#ff0000' };
+                            links[params.dataIndex].edgeLabel = { show: true };
+                            lastClickedEdgeIndex = params.dataIndex;
+                        }
+                    } else {
+                        // 如果点击了节点或空白处，恢复所有边
+                        if (lastClickedEdgeIndex !== -1) {
+                            links[lastClickedEdgeIndex].lineStyle = { width: 1 };
+                            links[lastClickedEdgeIndex].edgeLabel = { show: false };
+                            lastClickedEdgeIndex = -1;
+                        }
+                    }
+                    myChart.setOption({ series: [{ links: links }] });
+                });
+
+                window.addEventListener('resize', () => myChart.resize());
+
+            } catch (error) {
+                myChart.hideLoading();
+                console.error("渲染ECharts图谱时发生错误:", error);
+                echartsContainer.innerText = '渲染图谱时发生错误: ' + error.message;
+            } finally {
+                await session.close();
+                await driver.close();
+            }
+        }
+        drawGraphWithECharts();
+    </script>
+</body>
+
+</html>
