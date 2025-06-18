@@ -7,6 +7,7 @@
         :chat-records="chatRecords"
         @new-chat="handleNewChat()"
         @select-chat="handleSelectChat"
+        @delete-chat="handleDeleteChat"
       />
       <main class="flex-1 flex flex-col bg-paper">
         <ChatHeader @new-chat="handleTopicChat" />  <!--顶部标题栏-->
@@ -26,7 +27,7 @@ import Sidebar from '../components/Sidebar.vue'
 import ChatHeader from '../components/ChatHeader.vue'
 import ChatContainer from '../components/ChatContainer.vue'
 import ChatInput from '../components/ChatInput.vue'
-import { getUserId, createNewSession, sendMessage, loadSpecificSession, loadHistory } from '../api/ftbAPI'
+import { getUserId, createNewSession, sendMessage, loadSpecificSession, loadHistory, deleteSession } from '../api/ftbAPI'
 
 //消息结构
 interface Message {
@@ -244,6 +245,37 @@ const handleSelectChat = async (sessionId: string) => {
     console.log('历史记录加载成功')
   } catch (error) {
     console.error('加载会话历史记录失败:', error)
+  }
+}
+
+// 处理删除会话
+const handleDeleteChat = async (sessionId: string) => {
+  try {
+    /* 正式环境
+    const userId = localStorage.getItem('ztf_user_id')
+    if (!userId) {
+      console.error('未找到用户ID')
+      return
+    }
+    */
+
+    // 测试环境
+    const userId = '123' // 使用测试用户ID
+
+    // 调用删除API
+    await deleteSession(userId, sessionId)
+
+    // 从会话记录中移除
+    chatRecords.value = chatRecords.value.filter(record => record.id !== sessionId)
+
+    // 如果删除的是当前会话，创建新会话
+    if (currentSessionId.value === sessionId) {
+      handleNewChat()
+    }
+
+    console.log('会话删除成功:', sessionId)
+  } catch (error) {
+    console.error('删除会话失败:', error)
   }
 }
 </script>

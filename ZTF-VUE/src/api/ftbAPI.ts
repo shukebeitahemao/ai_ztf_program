@@ -42,6 +42,10 @@ interface LoadHistoryResponse {
   msg: HistorySession[];
 }
 
+interface DeleteSessionResponse {
+  msg: string;
+}
+
 /**
  * 获取用户ID
  * 功能：从本地storage获取用户ID，如果不存在则从后端获取新的用户ID
@@ -283,6 +287,29 @@ export const loadHistory = async (user_id: string): Promise<LoadHistoryResponse>
     }
   } catch (error) {
     console.error('加载历史记录失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 删除指定会话
+ */
+export const deleteSession = async (user_id: string, session_id: string): Promise<DeleteSessionResponse> => {
+  try {
+    /* 正式环境
+    const response = await axios.post<DeleteSessionResponse>(`${API_BASE_URL}/chat/delete_session`, {
+      user_id,
+      session_id
+    })
+    return response.data
+    */
+
+    // 测试环境
+    return {
+      msg: "删除成功"
+    }
+  } catch (error) {
+    console.error('删除会话失败:', error)
     throw error
   }
 }

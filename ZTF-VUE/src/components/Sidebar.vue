@@ -17,15 +17,25 @@
           <div
             v-for="record in chatRecords"
             :key="record.id"
-            class="p-3 hover:bg-gray-100 cursor-pointer transition-colors border-b border-gray-100"
+            class="p-3 hover:bg-gray-100 cursor-pointer transition-colors border-b border-gray-100 group relative"
             @click="$emit('select-chat', record.id)"
           >
-            <div class="text-sm font-medium truncate">
-              {{ record.title }}
-              <span v-if="record.topic" class="ml-1 text-xs text-primary">[{{ record.topic }}]</span>
-            </div>
-            <div class="text-xs text-gray-500 mt-1">
-              {{ formatTime(record.timestamp) }}
+            <div class="flex items-start gap-2">
+              <button
+                class="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 text-sm px-2 py-1 bg-gray-100 rounded"
+                @click.stop="handleDelete(record)"
+              >
+                删除
+              </button>
+              <div class="flex-1">
+                <div class="text-sm font-medium truncate">
+                  {{ record.title }}
+                  <span v-if="record.topic" class="ml-1 text-xs text-primary">[{{ record.topic }}]</span>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">
+                  {{ formatTime(record.timestamp) }}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -35,6 +45,9 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import { deleteSession } from '../api/ftbAPI'
+
 // 定义组件名称
 defineOptions({
   name: 'ChatSidebar'
@@ -48,14 +61,36 @@ interface ChatRecord {
   topic?: string
 }
 
-defineProps<{
+const props = defineProps<{
   chatRecords: ChatRecord[]
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'new-chat'): void
   (e: 'select-chat', id: string): void
+  (e: 'delete-chat', id: string): void
 }>()
+
+// 处理删除
+const handleDelete = async (record: ChatRecord) => {
+  try {
+    /* 正式环境
+    const userId = localStorage.getItem('ztf_user_id')
+    if (!userId) {
+      console.error('未找到用户ID')
+      return
+    }
+    */
+
+    // 测试环境
+    const userId = '123' // 使用测试用户ID
+
+    await deleteSession(userId, record.id)
+    emit('delete-chat', record.id)
+  } catch (error) {
+    console.error('删除会话失败:', error)
+  }
+}
 
 // 格式化时间
 const formatTime = (date: Date) => {
