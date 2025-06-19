@@ -310,5 +310,3 @@ if __name__=="__main__":
     print("txt_files文件夹中的txt文件写入pgsql的article表成功!")
     load_indexes()
     print("两个索引加载成功")
-
-

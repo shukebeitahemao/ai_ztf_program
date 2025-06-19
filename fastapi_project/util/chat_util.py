@@ -1,9 +1,9 @@
 import re 
 import os
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader,DocumentSummaryIndex
-from llama_index.core import PromptTemplate,get_response_synthesizer
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, DocumentSummaryIndex
+from llama_index.core import PromptTemplate, get_response_synthesizer
 from llama_index.core.settings import Settings
-from llama_index.vector_stores.chroma import ChromaVectorStore
+from llama_index_vector_stores_chroma import ChromaVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.deepseek import DeepSeek
 import chromadb
@@ -103,17 +103,11 @@ def initialize_llamaindex(deepseekapi, offline_mode=False):
                 embed_model = OpenAIEmbedding()
                 print("使用默认OpenAI嵌入模型")
 
-    # 替换 ServiceContext 创建
+    # 设置全局配置
     Settings.llm = llm
     Settings.embed_model = embed_model
 
-    # # 初始化 Chroma 客户端
-    # chroma_client = chromadb.Client()
-    # #新建或者连接已有的choroma
-    # chroma_collection = chroma_client.get_or_create_collection(chroma_collection_name)
-    # # 创建向量存储
-    # vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
-    return llm,embed_model
+    return llm, embed_model
 
 def show_doc_summaries(index: DocumentSummaryIndex):
     """打印索引中每篇文档的摘要"""
@@ -234,19 +228,3 @@ def get_paras_from_kws(kws):
 
 if __name__=="__main__":
     print(settings.DEEPSEEK_API)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

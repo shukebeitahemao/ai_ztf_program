@@ -6,6 +6,8 @@
       <Sidebar
         :chat-records="chatRecords"
         @new-chat="handleNewChat()"
+        @select-chat="handleSelectChat"
+        @delete-chat="handleDeleteChat"
       />
       <main class="flex-1 flex flex-col bg-paper">
         <ChatHeader @new-chat="handleTopicChat" />  <!--顶部标题栏-->
@@ -25,7 +27,7 @@ import Sidebar from '../components/Sidebar.vue'
 import ChatHeader from '../components/ChatHeader.vue'
 import ChatContainer from '../components/ChatContainer.vue'
 import ChatInput from '../components/ChatInput.vue'
-import { getUserId, createNewSession, getCurrentSessionId, sendMessage } from '../api/ftbAPI'
+import { getUserId, createNewSession, sendMessage, loadSpecificSession, loadHistory, deleteSession, saveUserMsg } from '../api/ftbAPI'
 
 //消息结构
 interface Message {
@@ -52,48 +54,55 @@ const userId = ref('')
 const currentSessionId = ref('')
 
 // 初始化：获取用户ID和会话ID
-//如果用户ID不存在，则向后端获取新用户ID
-//如果会话ID不存在，则向后端获取新会话ID
-//如果用户ID存在，则使用现有用户ID
-//如果会话ID存在，则使用现有会话ID
 onMounted(async () => {
   try {
     // 1.获取用户ID
-    userId.value = await getUserId()
-    console.log('userId:', userId.value)
+    const storedUserId = localStorage.getItem('ztf_user_id')
 
-    // 2.获取或创建会话ID
-    const sessionId = getCurrentSessionId()
-    if (!sessionId) {
-      // 如果没有会话ID，创建新会话
-      const response = await createNewSession(userId.value)
-      currentSessionId.value = response.session_id
+    if (storedUserId) {
+      // 如果本地存在用户ID，加载历史记录
+      userId.value = storedUserId
+      console.log('已存在的用户ID:', userId.value)
 
-      // 创建初始会话记录
-      const now = new Date()
-      const chatRecord: ChatRecord = {
-        id: currentSessionId.value,
-        title: `会话 ${currentSessionId.value.slice(-8)}`,
-        timestamp: now,
+      // 加载历史记录
+      const historyResponse = await loadHistory(userId.value)
+
+      // 按更新时间降序排序
+      const sortedHistory = historyResponse.msg.sort((a, b) =>
+        new Date(b.update_time).getTime() - new Date(a.update_time).getTime()
+      )
+
+      // 转换为ChatRecord格式并更新列表
+      chatRecords.value = sortedHistory.map(session => ({
+        id: session.session_id,
+        title: session.abstract,
+        timestamp: new Date(session.update_time),
         user_id: userId.value
-      }
-      chatRecords.value.unshift(chatRecord)
+      }))
+
+      // 创建新会话
+      await handleNewChat()
+
     } else {
-      // 如果有现有会话ID，使用它
-      currentSessionId.value = sessionId
-
-      // 创建现有会话的记录
-      const now = new Date()
-      const chatRecord: ChatRecord = {
-        id: currentSessionId.value,
-        title: `会话 ${currentSessionId.value.slice(-8)}`,
-        timestamp: now,
-        user_id: userId.value
-      }
-      chatRecords.value.unshift(chatRecord)
+      // 如果本地没有用户ID，直接创建新会话
+      userId.value = await getUserId()
+      console.log('新创建的用户ID:', userId.value)
+      await handleNewChat()
     }
+
     console.log('sessionId:', currentSessionId.value)
     console.log('当前会话记录数:', chatRecords.value.length)
+
+    // 添加页面关闭时的自动保存功能
+    window.addEventListener('beforeunload', async () => {
+      try {
+        if (userId.value) {
+          await saveUserMsg(userId.value)
+        }
+      } catch (error) {
+        console.error('自动保存失败:', error)
+      }
+    })
   } catch (error) {
     console.error('初始化失败:', error)
   }
@@ -212,6 +221,72 @@ const handleSendMessage = async (content: string) => {
       user_id: 'system'
     }
     messages.value.push(errorMessage)
+  }
+}
+
+// 处理选择特定会话
+const handleSelectChat = async (sessionId: string) => {
+  try {
+    console.log('选择会话:', sessionId)
+    // 清空当前消息列表
+    messages.value = []
+
+    // 更新当前会话ID
+    currentSessionId.value = sessionId
+
+    // 加载会话历史记录
+    const response = await loadSpecificSession(userId.value, sessionId)
+
+    // 解析历史记录
+    const history = JSON.parse(response.msg[0].history)
+
+    // 将历史记录转换为消息格式并添加到消息列表
+    history.forEach((item: { role: string; content: string }, index: number) => {
+      const message: Message = {
+        id: Date.now() + index,
+        session_id: sessionId,
+        content: item.content,
+        isUser: item.role === 'user',
+        timestamp: new Date(),
+        user_id: item.role === 'user' ? userId.value : 'system'
+      }
+      messages.value.push(message)
+    })
+
+    console.log('历史记录加载成功')
+  } catch (error) {
+    console.error('加载会话历史记录失败:', error)
+  }
+}
+
+// 处理删除会话
+const handleDeleteChat = async (sessionId: string) => {
+  try {
+    /* 正式环境
+    const userId = localStorage.getItem('ztf_user_id')
+    if (!userId) {
+      console.error('未找到用户ID')
+      return
+    }
+    */
+
+    // 测试环境
+    const userId = '123' // 使用测试用户ID
+
+    // 调用删除API
+    await deleteSession(userId, sessionId)
+
+    // 从会话记录中移除
+    chatRecords.value = chatRecords.value.filter(record => record.id !== sessionId)
+
+    // 如果删除的是当前会话，创建新会话
+    if (currentSessionId.value === sessionId) {
+      handleNewChat()
+    }
+
+    console.log('会话删除成功:', sessionId)
+  } catch (error) {
+    console.error('删除会话失败:', error)
   }
 }
 </script>
