@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Neovis 全量渲染示例</title>
+    <style>
+        #graph {
+            width: 100%;
+            height: 100vh;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="graph"></div>
+
+    <!-- 1. 确保先加载 neovis.js（此处示例用 CDN） -->
+
+    <script src="https://unpkg.com/neovis.js@2.0.2"></script>
+
+    <!-- <script src="https://unpkg.com/neovis.js@2.0.2/dist/neovis-without-dependencies.js"></script> -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // 2. 配置对象
+            const config = {
+                containerId: "graph",
+                neo4j: {
+                    serverUrl: "bolt://localhost:7687",
+                    serverUser: "neo4j",
+                    serverPassword: "wzdshjw123",
+                    database: "Test_graph"
+                },
+                // 3. 一跳全量关系+节点
+                initialCypher: `
+          MATCH (a)-[r]-(b)
+          RETURN a, r, b
+        `,
+                // 4. Person 和 Event 节点显示 name
+                labels: {
+                    Person: { caption: "name" },
+                    Event: { caption: "name" }
+                },
+                // 5. 所有关系显示它们的类型
+                relationships: {
+                    "*": {
+                        caption: "type"
+                    }
+                },
+                // 6. 箭头与字体微调
+                arrows: true,
+                visConfig: {
+                    nodes: { font: { size: 14 } },
+                    edges: { font: { size: 12, align: "horizontal" } }
+                }
+            };
+
+            // 7. 直接用全局 NeoVis（不用中间变量 NeoVisLib）
+            const viz = new NeoVis.default(config);
+            viz.render();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Neo4j 驱动程序直接测试</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        #status {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Neo4j 驱动程序直接测试</h1>
+    <p>该页面将直接连接到您的数据库并获取数据。请在下方查看日志，并打开浏览器开发者控制台（F12）查看详细的原始数据对象。</p>
+    <div id="status"></div>
+
+    <!-- 引入 Neo4j 官方驱动程序 -->
+    <script src="https://unpkg.com/neo4j-driver"></script>
+    <script>
+        const statusDiv = document.getElementById('status');
+
+        function log(message) {
+            console.log(message);
+            statusDiv.innerHTML += message + '\n';
+        }
+
+        async function runDriverTest() {
+            // --- 请确保这些连接信息是正确的 ---
+            const uri = "bolt://localhost:7687";
+            const user = "neo4j";
+            const password = "wzdshjw123";
+            const database = "Test_graph";
+            const cypher = "MATCH (n)-[r]-(m) RETURN n, r, m";
+            // ------------------------------------
+
+            log(`状态: 开始测试...`);
+            log(`目标: ${uri} (数据库: ${database})`);
+
+            const driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
+            const session = driver.session({ database });
+
+            log(`查询: ${cypher}`);
+
+            try {
+                const result = await session.run(cypher);
+                log(`状态: 查询成功，收到 ${result.records.length} 条记录。`);
+
+                const foundTypes = new Set();
+                result.records.forEach(record => {
+                    const relationship = record.get('r'); // 获取关系对象
+                    if (relationship && relationship.type) {
+                        foundTypes.add(relationship.type);
+                    }
+                });
+
+                log(`\n--- 诊断结果 ---`);
+                if (foundTypes.size > 0) {
+                    log(`成功! 在收到的数据中找到了 ${foundTypes.size} 种不同的关系类型:`);
+                    foundTypes.forEach(type => log(` -> ${type}`));
+                } else {
+                    log(`警告: 查询有返回记录，但在记录中未能解析出任何关系类型。`);
+                }
+
+                if (result.records.length > 0) {
+                    log("\n已将前5条原始记录打印到开发者控制台(F12)以供检查。");
+                    for (let i = 0; i < Math.min(5, result.records.length); i++) {
+                        console.log("原始记录 " + i + ":", result.records[i]);
+                    }
+                }
+
+            } catch (error) {
+                log(`\n--- 错误! ---`);
+                log(`测试过程中发生错误: ${error.message}`);
+                console.error("详细错误信息:", error);
+            } finally {
+                await session.close();
+                await driver.close();
+                log("\n状态: 会话和驱动已关闭。测试完成。");
+            }
+        }
+
+        // 运行测试
+        runDriverTest();
+    </script>
+</body>
+
+</html>

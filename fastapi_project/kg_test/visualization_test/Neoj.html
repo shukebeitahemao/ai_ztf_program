@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neo4j连接诊断工具</title>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .section {
+            margin: 20px 0;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .controls input,
+        .controls button {
+            margin: 5px;
+            padding: 8px;
+            width: 200px;
+        }
+
+        .controls label {
+            display: inline-block;
+            width: 100px;
+            font-weight: bold;
+        }
+
+        #status {
+            background-color: #f0f0f0;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .info {
+            color: blue;
+        }
+
+        #graph {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Neo4j连接诊断工具</h1>
+
+        <div class="section">
+            <h3>连接配置</h3>
+            <div class="controls">
+                <div>
+                    <label>服务器:</label>
+                    <select id="server_protocol">
+                        <option value="bolt://localhost:7687">bolt</option>
+                        <option value="http://localhost:7474">http</option>
+                    </select>
+                </div>
+                <div>
+                    <label>用户名:</label>
+                    <input type="text" id="username" value="neo4j">
+                </div>
+                <div>
+                    <label>密码:</label>
+                    <input type="password" id="password" value="wzdshjw123">
+                </div>
+                <div>
+                    <button onclick="runDiagnostics()">运行诊断</button>
+                    <button onclick="testAllPorts()">测试所有端口</button>
+                    <button onclick="clearStatus()">清除日志</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>诊断结果</h3>
+            <div id="status">等待诊断...</div>
+        </div>
+
+        <div class="section">
+            <h3>知识图谱可视化</h3>
+            <button onclick="renderGraph()">渲染图谱</button>
+            <div id="graph"></div>
+        </div>
+    </div>
+
+    <script src="neovis.js"></script>
+    <script>
+        function log(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+
+            statusDiv.innerHTML += `<span class="${type}">${logEntry}</span>`;
+            statusDiv.scrollTop = statusDiv.scrollHeight;
+
+            console.log(message);
+        }
+
+        function clearStatus() {
+            document.getElementById('status').innerHTML = '';
+        }
+
+        function getConnectionConfig() {
+            return {
+                container_id: "graph",
+                server_url: document.getElementById('server_protocol').value,
+                server_user: document.getElementById('username').value,
+                server_password: document.getElementById('password').value,
+                arrows: true
+            };
+        }
+
+        function testConnection(serverUrl, callback) {
+            log(`测试连接: ${serverUrl}`, 'info');
+
+            const config = {
+                container_id: "graph",
+                server_url: serverUrl,
+                server_user: document.getElementById('username').value,
+                server_password: document.getElementById('password').value,
+                arrows: true,
+                initial_cypher: "RETURN 1 as test"
+            };
+
+            try {
+                const testDiv = document.createElement('div');
+                testDiv.style.display = 'none';
+                document.body.appendChild(testDiv);
+
+                config.container_id = testDiv.id = 'test-' + Date.now();
+
+                const testViz = new NeoVis.default(config);
+
+                let completed = false;
+
+                const timeout = setTimeout(() => {
+                    if (!completed) {
+                        log(`连接超时: ${serverUrl}`, 'error');
+                        document.body.removeChild(testDiv);
+                        callback(false, '连接超时');
+                    }
+                }, 10000);
+
+                testViz.registerOnEvent("completed", (e) => {
+                    completed = true;
+                    clearTimeout(timeout);
+                    log(`连接成功: ${serverUrl}`, 'success');
+                    document.body.removeChild(testDiv);
+                    callback(true, '连接成功');
+                });
+
+                testViz.registerOnEvent("error", (e) => {
+                    completed = true;
+                    clearTimeout(timeout);
+                    const errorMsg = e.error || e.message || '未知错误';
+                    log(`连接失败: ${serverUrl} - ${errorMsg}`, 'error');
+                    document.body.removeChild(testDiv);
+                    callback(false, errorMsg);
+                });
+
+                testViz.render();
+            } catch (error) {
+                log(`连接异常: ${serverUrl} - ${error.message}`, 'error');
+                callback(false, error.message);
+            }
+        }
+
+        function testAllPorts() {
+            log('开始测试所有可能的连接配置...', 'info');
+
+            const servers = [
+                'bolt://localhost:7687',
+                'http://localhost:7474'
+            ];
+
+            let testIndex = 0;
+
+            function testNext() {
+                if (testIndex >= servers.length) {
+                    log('所有连接测试完成', 'info');
+                    return;
+                }
+
+                const serverUrl = servers[testIndex];
+                testConnection(serverUrl, (success, message) => {
+                    if (success) {
+                        log(`建议使用: ${serverUrl}`, 'success');
+                        document.getElementById('server_protocol').innerHTML +=
+                            `<option value="${serverUrl}" selected>${serverUrl} (测试成功)</option>`;
+                    }
+                    testIndex++;
+                    setTimeout(testNext, 1000); // 延迟1秒后测试下一个
+                });
+            }
+
+            testNext();
+        }
+
+        function runDiagnostics() {
+            log('开始运行诊断...', 'info');
+
+            // 检查NeoVis是否加载
+            if (typeof NeoVis === 'undefined') {
+                log('错误: NeoVis库未加载', 'error');
+                return;
+            } else {
+                log('NeoVis库已正确加载', 'success');
+            }
+
+            // 检查连接配置
+            const config = getConnectionConfig();
+            log(`连接配置: ${JSON.stringify(config, null, 2)}`, 'info');
+
+            // 测试当前配置
+            testConnection(config.server_url, (success, message) => {
+                if (success) {
+                    log('当前配置连接成功！', 'success');
+                } else {
+                    log('当前配置连接失败，建议运行"测试所有端口"', 'error');
+                }
+            });
+        }
+
+        function renderGraph() {
+            log('开始渲染知识图谱...', 'info');
+
+            document.getElementById('graph').innerHTML = '';
+
+            const config = getConnectionConfig();
+            config.initial_cypher = "MATCH (n) RETURN n LIMIT 25";
+
+            try {
+                const viz = new NeoVis.default(config);
+
+                viz.registerOnEvent("completed", (e) => {
+                    log('知识图谱渲染完成', 'success');
+                });
+
+                viz.registerOnEvent("error", (e) => {
+                    log(`渲染失败: ${e.error || e.message}`, 'error');
+                });
+
+                viz.render();
+            } catch (error) {
+                log(`渲染异常: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载完成
+        document.addEventListener('DOMContentLoaded', function () {
+            log('诊断工具已加载，请点击"运行诊断"开始', 'info');
+        });
+    </script>
+</body>

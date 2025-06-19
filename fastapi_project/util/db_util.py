@@ -7,7 +7,7 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, DocumentSu
 from llama_index.core import PromptTemplate, get_response_synthesizer, load_index_from_storage
 from llama_index.core import Document, StorageContext
 from llama_index.core.settings import Settings
-from llama_index_vector_stores_chroma import ChromaVectorStore
+from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.deepseek import DeepSeek
 from llama_index.core.node_parser import SentenceSplitter
@@ -291,13 +291,13 @@ def get_final_nodes_text(loaded_simpleindex,loaded_doc_sum_index,user_query):
 if __name__=="__main__":
     print(settings.DEEPSEEK_API)
     print(".env文件信息成功加载！")
-    index,doc_sum_index=create_summary_and_simple_index()
-    save_indexes(index,doc_sum_index)
-    print("两个索引创建成功")
-    loaded_simpleindex,loaded_doc_sum_index=load_indexes()
-    print("两个索引加载成功")
-    res_text=get_final_nodes_text(loaded_simpleindex,loaded_doc_sum_index,user_query="章先生是谁？")
-    print(res_text)
+    # index,doc_sum_index=create_summary_and_simple_index()
+    # save_indexes(index,doc_sum_index)
+    # print("两个索引创建成功")
+    # loaded_simpleindex,loaded_doc_sum_index=load_indexes()
+    # print("两个索引加载成功")
+    # res_text=get_final_nodes_text(loaded_simpleindex,loaded_doc_sum_index,user_query="章先生是谁？")
+    # print(res_text)
     connect_to_postgres()
     print("数据库连接成功！")
     create_article_table()
@@ -310,5 +310,3 @@ if __name__=="__main__":
     print("txt_files文件夹中的txt文件写入pgsql的article表成功!")
     load_indexes()
     print("两个索引加载成功")
-
-

@@ -63,7 +63,7 @@ def split_txt_files(source_file='fastapi_project//chat//txt_file', output_file='
 #split_txt_files()
 
 #初始化llamaindex相关配置,.默认使用deepseek
-def initialize_llamaindex(deepseekapi, offline_mode=True):
+def initialize_llamaindex(deepseekapi, offline_mode=False):
     # 初始化 DeepSeek 客户端
     llm = DeepSeek(
         api_key=deepseekapi,  # 替换为你的 DeepSeek API key

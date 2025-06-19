@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Neovis.js 最终诊断 v2</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        .section {
+            border: 2px solid;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .section h2 {
+            margin-top: 0;
+        }
+
+        #truth-log,
+        #viz-log {
+            background-color: #f0f0f0;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        #viz {
+            width: 100%;
+            height: 500px;
+            border: 1px solid lightgray;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Neovis.js 最终诊断 v2</h1>
+    <p>使用最终确定的正确配置，进行事实检查与渲染测试的直接对比。</p>
+
+    <div class="section" style="border-color: #007bff;">
+        <h2>1. 事实检查 (官方驱动)</h2>
+        <div id="truth-log"></div>
+    </div>
+
+    <div class="section" style="border-color: #28a745;">
+        <h2>2. 渲染测试 (Neovis.js)</h2>
+        <div id="viz-log"></div>
+        <div id="viz"></div>
+    </div>
+
+    <!-- 引入库 -->
+    <script src="https://unpkg.com/neo4j-driver"></script>
+    <script src="https://unpkg.com/neovis.js@2.0.2"></script>
+
+    <script>
+        // --- 最终确认的连接配置 ---
+        const URI = "neo4j://localhost:7687";
+        const USER = "neo4j";
+        const PASSWORD = "wzdshjw123";
+        const DATABASE = "neo4j"; // 这是正确的数据库名
+        const CYPHER = "MATCH (n)-[r]-(m) RETURN n, r, m";
+
+        // --- 第1部分：事实检查 ---
+        async function runGroundTruthTest() {
+            const logDiv = document.getElementById('truth-log');
+            const log = (msg, level = 'info') => {
+                const span = document.createElement('span');
+                span.className = level;
+                span.textContent = msg + '\n';
+                logDiv.appendChild(span);
+            };
+
+            log('状态: 开始使用官方驱动获取数据...');
+            const driver = neo4j.driver(URI, neo4j.auth.basic(USER, PASSWORD));
+            const session = driver.session({ database: DATABASE });
+
+            try {
+                const result = await session.run(CYPHER);
+                log(`状态: 查询成功，收到 ${result.records.length} 条记录。`, 'success');
+
+                const types = new Map();
+                result.records.forEach(record => {
+                    const rel = record.get('r');
+                    if (rel && rel.type) {
+                        types.set(rel.type, (types.get(rel.type) || 0) + 1);
+                    }
+                });
+
+                log('\n--- 事实诊断结果 ---');
+                if (types.size > 0) {
+                    log(`成功! 在收到的原始数据中，共找到 ${types.size} 种不同的关系类型:`, 'success');
+                    types.forEach((count, type) => log(` -> ${type} (数量: ${count})`));
+                } else {
+                    log(`警告: 未能从返回的记录中解析出任何关系类型。`, 'error');
+                }
+
+            } catch (error) {
+                log(`\n--- 错误! ---`, 'error');
+                log(`官方驱动测试失败: ${error.message}`, 'error');
+            } finally {
+                await session.close();
+                await driver.close();
+                log("\n状态: 官方驱动测试完成。");
+            }
+        }
+
+        // --- 第2部分：渲染测试 ---
+        function runRenderTest() {
+            const logDiv = document.getElementById('viz-log');
+            const log = (msg, level = 'info') => {
+                const span = document.createElement('span');
+                span.className = level;
+                span.textContent = msg + '\n';
+                logDiv.appendChild(span);
+            };
+
+            log('状态: 开始初始化 Neovis.js...');
+            try {
+                const config = {
+                    containerId: "viz",
+                    neo4j: {
+                        serverUrl: URI, serverUser: USER, serverPassword: PASSWORD, database: DATABASE,
+                    },
+                    labels: { "Person": { label: "name" }, "Event": { label: "name" } },
+                    relationships: { "*": { caption: "type" } },
+                    initialCypher: CYPHER
+                };
+
+                const viz = new NeoVis.default(config);
+                viz.render();
+                log('状态: Neovis.js 渲染已启动。请观察下方图谱。');
+
+                viz.registerOnEvent('completed', () => {
+                    log('Neovis.js 事件: "completed" - 渲染数据加载完成。', 'success');
+                });
+                viz.registerOnEvent('error', (e) => {
+                    log(`Neovis.js 事件: "error" - 渲染时发生错误: ${e.error || e.message}`, 'error');
+                });
+
+            } catch (error) {
+                log(`\n--- 错误! ---`, 'error');
+                log(`初始化 Neovis.js 失败: ${error.message}`, 'error');
+            }
+        }
+
+        // --- 依次执行 ---
+        runGroundTruthTest().then(() => {
+            runRenderTest();
+        });
+
+    </script>
+</body>
+
+</html>
