@@ -3,7 +3,7 @@ import os
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, DocumentSummaryIndex
 from llama_index.core import PromptTemplate, get_response_synthesizer
 from llama_index.core.settings import Settings
-from llama_index_vector_stores_chroma import ChromaVectorStore
+#from llama_index_vector_stores_chroma import ChromaVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.deepseek import DeepSeek
 import chromadb
@@ -64,45 +64,38 @@ def split_txt_files(source_file='fastapi_project//chat//txt_file', output_file='
 
 #初始化llamaindex相关配置,.默认使用deepseek
 def initialize_llamaindex(deepseekapi, offline_mode=False):
+    # 检查环境变量是否设置了离线模式
+    if os.getenv('HUGGINGFACE_OFFLINE', 'false').lower() == 'true':
+        offline_mode = True
+        print("检测到环境变量 HUGGINGFACE_OFFLINE=true，启用离线模式")
     # 初始化 DeepSeek 客户端
     llm = DeepSeek(
         api_key=deepseekapi,  # 替换为你的 DeepSeek API key
         model="deepseek-chat"
     )
+    # 设置模型缓存目录
+    #cache_dir = "D:\\ai_ztf_resouce\\model"
     
-    if offline_mode:
-        print("使用离线模式，跳过HuggingFace嵌入模型初始化")
-        # 使用简单的文本嵌入模型
-        from llama_index.embeddings.openai import OpenAIEmbedding
-        embed_model = OpenAIEmbedding()
-        print("使用OpenAI嵌入模型")
-    else:
-        # 尝试初始化 HuggingFace 嵌入模型，如果失败则使用备用方案
-        try:
-            # 初始化 HuggingFace 嵌入模型
-            embed_model = HuggingFaceEmbedding(
-                #这是北京智源人工智能研究院（BAAI）开发的开源模型
-                model_name="BAAI/bge-large-zh-v1.5"
-            )
-            print("成功加载 BAAI/bge-large-zh-v1.5 嵌入模型")
-        except Exception as e:
-            print(f"加载 BAAI/bge-large-zh-v1.5 模型失败: {e}")
-            print("尝试使用备用嵌入模型...")
-            
-            try:
-                # 尝试使用较小的中文模型
-                embed_model = HuggingFaceEmbedding(
-                    model_name="sentence-transformers/all-MiniLM-L6-v2"
-                )
-                print("成功加载 all-MiniLM-L6-v2 嵌入模型")
-            except Exception as e2:
-                print(f"加载备用模型也失败: {e2}")
-                print("使用默认嵌入模型...")
-                # 使用llamaindex的默认嵌入模型
-                from llama_index.embeddings.openai import OpenAIEmbedding
-                embed_model = OpenAIEmbedding()
-                print("使用默认OpenAI嵌入模型")
-
+    # 确保缓存目录存在
+   #
+    
+    # 初始化嵌入模型，使用本地模型路径
+    model_path = "ai_ztf/models/models--BAAI--bge-large-zh-v1.5/snapshots/79e7739b6ab944e86d6171e44d24c997fc1e0116"
+    # 检查本地路径是否存在，如果不存在则使用在线模型
+    if os.path.exists(model_path):
+        embed_model = HuggingFaceEmbedding(
+            model_name=model_path,
+            trust_remote_code=True
+        )
+        print(f"成功加载本地 BGE 模型: {model_path}")
+    # else:
+    # embed_model = HuggingFaceEmbedding(
+    #     model_name="BAAI/bge-large-zh-v1.5",
+    #     trust_remote_code=True,
+    #     cache_folder="ai_ztf/models"
+    # )
+    # print("使用在线 BAAI/bge-large-zh-v1.5 嵌入模型")
+    # print("成功加载 BAAI/bge-large-zh-v1.5 嵌入模型")
     # 设置全局配置
     Settings.llm = llm
     Settings.embed_model = embed_model

@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:3000'
+const API_BASE_URL = 'http://localhost:8000'
 
 interface CreateUserResponse {
   user_id: string;
@@ -68,7 +68,7 @@ export const getUserId = async (): Promise<string> => {
     // 测试环境
     let storedUserId = localStorage.getItem(STORAGE_KEY)
     // 测试用：设置默认值
-    storedUserId = '123'
+    //storedUserId = '123'
 
     if (storedUserId) {
       return storedUserId
@@ -94,28 +94,28 @@ export const getUserId = async (): Promise<string> => {
  * 返回值：
  *   - Promise<CreateSessionResponse>: 返回用户ID和会话ID
  */
-export const createNewSession = async (user_id: string): Promise<CreateSessionResponse> => {
+export const createNewSession = async (userid: string): Promise<CreateSessionResponse> => {
   const STORAGE_KEY = 'ztf_session_id'
 
   try {
-    /* 正式环境
+    //正式环境
     const response = await axios.get<CreateSessionResponse>(`${API_BASE_URL}/chat/create_new_chat`, {
       params: {
-        user_id
+        userid
       }
     })
 
     // 将会话ID保存到本地storage
     localStorage.setItem(STORAGE_KEY, response.data.session_id)
     return response.data
-    */
+
 
     // 测试环境
-    const testSessionId = `session_${Date.now()}`
-    const testResponse: CreateSessionResponse = {
-      user_id: user_id,
-      session_id: testSessionId
-    }
+    // const testSessionId = `session_${Date.now()}`
+    // const testResponse: CreateSessionResponse = {
+    //   user_id: user_id,
+    //   session_id: testSessionId
+    // }
 
     // 将会话ID保存到本地storage
     localStorage.setItem(STORAGE_KEY, testResponse.session_id)
@@ -140,30 +140,30 @@ export const createNewSession = async (user_id: string): Promise<CreateSessionRe
  */
 export const sendMessage = async (
   user_msg: string,
-  session_id: string,
-  user_id: string,
-  story_type: string = ''
+  sessionid: string,
+  userid: string,
+  story_type: string = 'x'
 ): Promise<SendMessageResponse> => {
   try {
-    /* 正式环境
+    // 正式环境
     const response = await axios.get<SendMessageResponse>(`${API_BASE_URL}/chat`, {
       params: {
-        user_id,
-        session_id,
+        userid,
+        sessionid,
         user_msg,
         story_type
       }
     })
     return response.data
-    */
+
 
     // 测试环境
     // 模拟后端响应
-    const testResponse: SendMessageResponse = {
-      sessionid: session_id,
-      system_msg: `测试回复: 收到消息"${user_msg}"，会话ID为${session_id}${story_type ? '，话题为' + story_type : ''}`
-    }
-    return testResponse
+    // const testResponse: SendMessageResponse = {
+    //   sessionid: session_id,
+    //   system_msg: `测试回复: 收到消息"${user_msg}"，会话ID为${session_id}${story_type ? '，话题为' + story_type : ''}`
+    // }
+    //return testResponse
 
   } catch (error) {
     console.error('发送消息失败:', error)
@@ -220,39 +220,41 @@ export const loadSpecificSession = async (
 /**
  * 加载用户历史会话记录
  */
-export const loadHistory = async (user_id: string): Promise<LoadHistoryResponse> => {
+export const loadHistory = async (userid: string): Promise<LoadHistoryResponse> => {
   try {
-    /* 正式环境
+    // 正式环境
     const response = await axios.get<LoadHistoryResponse>(`${API_BASE_URL}/load_history`, {
-      params: { user_id }
-    })
-    return response.data
-    */
-
-    // 测试环境
-    return {
-      msg: [
-        {
-          session_id: 'test_session_1',
-          abstract: '邹韬奋的教育理念探讨',
-          update_time: '2024-03-11T10:00:00Z'
-        },
-        {
-          session_id: 'test_session_2',
-          abstract: '关于生活书店的对话',
-          update_time: '2024-03-11T09:00:00Z'
-        }
-      ]
-    }
+      params: { userid }
+    });
+    console.log('缺乏历史记录', response.data)
+    return response.data;
   } catch (error) {
-    console.error('加载历史记录失败:', error)
-    throw error
+    console.error('加载历史记录失败:', error);
+    throw error;
   }
+};
+
+// 测试环境
+/*
+return {
+  msg: [
+    {
+      session_id: 'test_session_1',
+      abstract: '邹韬奋的教育理念探讨',
+      update_time: '2024-03-11T10:00:00Z'
+    },
+    {
+      session_id: 'test_session_2',
+      abstract: '关于生活书店的对话',
+      update_time: '2024-03-11T09:00:00Z'
+    }
+  ]
 }
+ 
 
 /**
- * 删除指定会话
- */
+* 删除指定会话
+*/
 export const deleteSession = async (user_id: string, session_id: string): Promise<DeleteSessionResponse> => {
   try {
     /* 正式环境

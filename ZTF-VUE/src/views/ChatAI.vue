@@ -57,52 +57,41 @@ const currentSessionId = ref('')
 onMounted(async () => {
   try {
     // 1.获取用户ID
-    const storedUserId = localStorage.getItem('ztf_user_id')
+    userId.value = await getUserId()
+    console.log('userId:', userId.value)
 
-    if (storedUserId) {
-      // 如果本地存在用户ID，加载历史记录
-      userId.value = storedUserId
-      console.log('已存在的用户ID:', userId.value)
+    // 2.获取或创建会话ID
+    const sessionId = getCurrentSessionId()
+    if (!sessionId) {
+      // 如果没有会话ID，创建新会话
+      const response = await createNewSession(userId.value)
+      currentSessionId.value = response.session_id
 
-      // 加载历史记录
-      const historyResponse = await loadHistory(userId.value)
-
-      // 按更新时间降序排序
-      const sortedHistory = historyResponse.msg.sort((a, b) =>
-        new Date(b.update_time).getTime() - new Date(a.update_time).getTime()
-      )
-
-      // 转换为ChatRecord格式并更新列表
-      chatRecords.value = sortedHistory.map(session => ({
-        id: session.session_id,
-        title: session.abstract,
-        timestamp: new Date(session.update_time),
+      // 创建初始会话记录
+      const now = new Date()
+      const chatRecord: ChatRecord = {
+        id: currentSessionId.value,
+        title: `会话 ${currentSessionId.value.slice(-8)}`,
+        timestamp: now,
         user_id: userId.value
-      }))
-
-      // 创建新会话
-      await handleNewChat()
-
+      }
+      chatRecords.value.unshift(chatRecord)
     } else {
-      // 如果本地没有用户ID，直接创建新会话
-      userId.value = await getUserId()
-      console.log('新创建的用户ID:', userId.value)
-      await handleNewChat()
-    }
+      // 如果有现有会话ID，使用它
+      currentSessionId.value = sessionId
 
+      // 创建现有会话的记录
+      const now = new Date()
+      const chatRecord: ChatRecord = {
+        id: currentSessionId.value,
+        title: `会话 ${currentSessionId.value.slice(-8)}`,
+        timestamp: now,
+        user_id: userId.value
+      }
+      chatRecords.value.unshift(chatRecord)
+    }
     console.log('sessionId:', currentSessionId.value)
     console.log('当前会话记录数:', chatRecords.value.length)
-
-    // 添加页面关闭时的自动保存功能
-    window.addEventListener('beforeunload', async () => {
-      try {
-        if (userId.value) {
-          await saveUserMsg(userId.value)
-        }
-      } catch (error) {
-        console.error('自动保存失败:', error)
-      }
-    })
   } catch (error) {
     console.error('初始化失败:', error)
   }

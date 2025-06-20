@@ -1,8 +1,10 @@
 # 忽略大型数据文件
 *.pdf
 *.PDF
+*.zip
 raw_resource/reading_material/
 reading_material/
+models/
 
 # Python项目常见忽略项
 __pycache__/

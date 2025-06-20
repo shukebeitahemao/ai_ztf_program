@@ -262,12 +262,16 @@ def save_indexes(index,doc_sum_index):
 
 ##加载两个index
 def load_indexes():
-    # 先初始化LLM和嵌入模型
-    llm, embed_model = initialize_llamaindex(
-        deepseekapi=settings.DEEPSEEK_API
-    )
+    # 使用已初始化的模型实例，避免重复初始化
+    # from .chat_util import _llm_instance, _embed_model_instance
     
-    # 加载VectorStoreIndex
+    # # 如果模型还未初始化，则进行初始化
+    # if _llm_instance is None or _embed_model_instance is None:
+    #     llm, embed_model = initialize_llamaindex(
+    #         deepseekapi=settings.DEEPSEEK_API
+    #     )
+    llm, embed_model = initialize_llamaindex(deepseekapi=settings.DEEPSEEK_API)
+    # 加载VectorStoreIndex)
     storage_context = StorageContext.from_defaults(persist_dir="fastapi_project\\store\\simpleindex")
     loaded_simpleindex = load_index_from_storage(storage_context)
 

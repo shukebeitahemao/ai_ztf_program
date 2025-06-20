@@ -9,8 +9,9 @@ from fastapi_project.settings import settings
 from fastapi_project.util import db_util
 import uuid
 import json
-# 初始化llm和embed模型
+# 初始化llm和embed模型 - 只调用一次
 llm, embed_model = initialize_llamaindex(deepseekapi=settings.DEEPSEEK_API)
+# 加载索引时使用已初始化的模型
 summary_index,simple_index = db_util.load_indexes()
 # chat_history = [
 #     {"role": "assistant", "content": "你好"},
@@ -30,9 +31,9 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     # 允许的源列表
-    allow_origins=["http://localhost:5173"],  # 替换成您的前端URL
+    #allow_origins=["http://localhost:5173"],  # 替换成您的前端URL
     # 或者在开发环境中允许所有源
-    # allow_origins=["*"],  
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],  # 允许所有HTTP方法
     allow_headers=["*"],  # 允许所有请求头
@@ -115,6 +116,9 @@ def load_history(
     SELECT session_id,update_time,abstract FROM message WHERE user_id = '{userid}' ;
     """
     history = db_util.execute_query(excute_query)
+    print('没有历史数据的情况',history)
+    if not history:
+        return {"msg": [{'session_id':10001,'abstrc':'10001','update_time':'1999/01/01 12:00:00'}]}
     formatted_history = []
     for session_id, update_time, abstract in history:
         formatted_history.append({
@@ -168,7 +172,7 @@ def create_user():
     print('创建了新用户后的msg_pool',msg_pool)
     return {"user_id": user_id}
 
-@app.get("/create_new_chat")
+@app.get("/chat/create_new_chat")
 def create_new_chat(
     userid: str = Query(..., description="用户ID")
 ):
@@ -183,10 +187,10 @@ def create_new_chat(
 
 @app.get("/chat/delete_session")
 def delete_session(
-    userid: str = Query(..., description="用户ID"),
-    sessionid: str = Query(..., description="会话ID")
+    user_id: str = Query(..., description="用户ID"),
+    session_id: str = Query(..., description="会话ID")
 ):
-    del msg_pool[userid][sessionid]
+    del msg_pool[user_id][session_id]
     print('删除会话后的msg_pool',msg_pool)
     return {"msg": "删除成功"}
 
@@ -203,10 +207,10 @@ def save_usermsg(
         history_json = json.dumps(history, ensure_ascii=False)
         print('history_json',history_json)
         GET_ABSTRCT_PROMPT = f"""
-        你是一个历史学家，擅长从历史人物的对话中提取关键词，并根据关键词生成摘要。
+        你是一个历史学家，擅长从历史人物的对话中总结讨论主题。
         用户的历史对话是：
         {history}
-        请根据用户的历史对话，提取关键词，并根据关键词生成摘要。
+        请总结讨论主题，不要超过20个字。
         """
         response = client.chat.completions.create(
             model="deepseek-chat",
