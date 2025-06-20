@@ -32,10 +32,10 @@ import { getUserId, createNewSession, sendMessage, loadSpecificSession, loadHist
 //消息结构
 interface Message {
   id: number        // 消息ID
-  session_id: string   //会话ID
+  sessionid: string   //会话ID
   content: string  //内容
   timestamp: Date //时间戳
-  user_id: string  // 用户ID
+  userid: string  // 用户ID
   isUser: boolean  // 是否是用户消息
   topic?: string  //话题
 }
@@ -44,7 +44,7 @@ interface ChatRecord {  //聊天记录结构
   id: string
   title: string
   timestamp: Date
-  user_id: string
+  userid: string
   topic?: string
 }
 
@@ -74,10 +74,10 @@ onMounted(async () => {
 
       // 转换为ChatRecord格式并更新列表
       chatRecords.value = sortedHistory.map(session => ({
-        id: session.session_id,
+        id: session.sessionid,
         title: session.abstract,
         timestamp: new Date(session.update_time),
-        user_id: userId.value
+        userid: userId.value
       }))
 
       // 创建新会话
@@ -117,7 +117,7 @@ const handleNewChat = async () => {
 
     // 创建新的会话
     const response = await createNewSession(userId.value)
-    currentSessionId.value = response.session_id
+    currentSessionId.value = response.sessionid
 
     // 创建新的聊天记录
     const now = new Date()
@@ -125,7 +125,7 @@ const handleNewChat = async () => {
       id: currentSessionId.value,
       title: `会话 ${currentSessionId.value.slice(-8)}`,
       timestamp: now,
-      user_id: userId.value
+      userid: userId.value
     }
     // 添加到聊天记录列表的开头
     chatRecords.value.unshift(chatRecord)
@@ -144,7 +144,7 @@ const handleTopicChat = async (topic: string) => {
 
     // 创建新的会话
     const response = await createNewSession(userId.value)
-    currentSessionId.value = response.session_id
+    currentSessionId.value = response.sessionid
 
     // 创建新的聊天记录
     const now = new Date()
@@ -152,7 +152,7 @@ const handleTopicChat = async (topic: string) => {
       id: currentSessionId.value,
       title: `${topic} - ${currentSessionId.value.slice(-8)}`,
       timestamp: now,
-      user_id: userId.value,
+      userid: userId.value,
       topic: topic
     }
 
@@ -177,11 +177,11 @@ const handleSendMessage = async (content: string) => {
   // 添加用户消息到界面
   const userMessage: Message = {
     id: Date.now(),
-    session_id: currentSessionId.value,
+    sessionid: currentSessionId.value,
     content,
     isUser: true,
     timestamp: now,
-    user_id: userId.value
+    userid: userId.value
   }
   messages.value.push(userMessage)
 
@@ -194,19 +194,19 @@ const handleSendMessage = async (content: string) => {
     // 发送消息到后端
     const response = await sendMessage(
       content,  // user_msg
-      currentSessionId.value,  // session_id
-      userId.value,  // user_id
+      currentSessionId.value,  // sessionid
+      userId.value,  // userid
       story_type  // story_type
     )
 
     // 添加系统回复
     const systemMessage: Message = {
       id: Date.now() + 1,
-      session_id: response.sessionid,
+      sessionid: response.sessionid,
       content: response.system_msg,
       isUser: false,
       timestamp: new Date(),
-      user_id: 'system'
+      userid: 'system'
     }
     messages.value.push(systemMessage)
   } catch (error) {
@@ -214,11 +214,11 @@ const handleSendMessage = async (content: string) => {
     // 添加错误提示消息
     const errorMessage: Message = {
       id: Date.now() + 1,
-      session_id: currentSessionId.value,
+      sessionid: currentSessionId.value,
       content: '消息发送失败，请稍后重试',
       isUser: false,
       timestamp: new Date(),
-      user_id: 'system'
+      userid: 'system'
     }
     messages.value.push(errorMessage)
   }
@@ -244,11 +244,11 @@ const handleSelectChat = async (sessionId: string) => {
     history.forEach((item: { role: string; content: string }, index: number) => {
       const message: Message = {
         id: Date.now() + index,
-        session_id: sessionId,
+        sessionid: sessionId,
         content: item.content,
         isUser: item.role === 'user',
         timestamp: new Date(),
-        user_id: item.role === 'user' ? userId.value : 'system'
+        userid: item.role === 'user' ? userId.value : 'system'
       }
       messages.value.push(message)
     })
