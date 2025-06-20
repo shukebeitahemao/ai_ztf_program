@@ -302,25 +302,28 @@ export const deleteSession = async (userid: string, sessionid: string): Promise<
 
 /**
  * 保存用户消息
- * 功能：保存用户的消息记录
+ * 功能：保存用户的消息到后端
  * 参数：
  *   - userid: 用户ID
  * 返回值：
- *   - Promise: 包含保存操作的响应
+ *   - Promise<SaveUserMsgResponse>: 返回保存结果
  */
 export const saveUserMsg = async (userid: string): Promise<SaveUserMsgResponse> => {
   try {
     /* 正式环境
-    const response = await axios.post<SaveUserMsgResponse>(`${API_BASE_URL}/chat/save_user_msg`, {
-      userid: userid
+    const response = await axios.get<SaveUserMsgResponse>(`${API_BASE_URL}/chat/save_user_msg`, {
+      params: {
+        userid
+      }
     })
     return response.data
     */
 
     // 测试环境
-    // 模拟后端响应
-    return { msg: 'success' }
-
+    const testResponse: SaveUserMsgResponse = {
+      msg: '保存成功'
+    }
+    return testResponse
   } catch (error) {
     console.error('保存用户消息失败:', error)
     throw error
