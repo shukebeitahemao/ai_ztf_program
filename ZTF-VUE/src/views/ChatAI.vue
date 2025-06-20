@@ -58,20 +58,18 @@ onMounted(async () => {
   try {
     // 1.获取用户ID
     const storedUserId = localStorage.getItem('ztf_user_id')
-
     if (storedUserId) {
       // 如果本地存在用户ID，加载历史记录
       userId.value = storedUserId
       console.log('已存在的用户ID:', userId.value)
-
       // 加载历史记录
       const historyResponse = await loadHistory(userId.value)
+      console.log('钩子获取历史记录')
 
       // 按更新时间降序排序
       const sortedHistory = historyResponse.msg.sort((a, b) =>
         new Date(b.update_time).getTime() - new Date(a.update_time).getTime()
       )
-
       // 转换为ChatRecord格式并更新列表
       chatRecords.value = sortedHistory.map(session => ({
         id: session.sessionid,
@@ -79,17 +77,18 @@ onMounted(async () => {
         timestamp: new Date(session.update_time),
         userid: userId.value
       }))
-
+      console.log('钩子更新列表')
       // 创建新会话
       await handleNewChat()
-
     } else {
-      // 如果本地没有用户ID，直接创建新会话
+      // 如果本地没有用户ID，先获取userid再创建新会话
+      //创建userid
       userId.value = await getUserId()
       console.log('新创建的用户ID:', userId.value)
+      //创建新会话
       await handleNewChat()
+      console.log('创建新会话',currentSessionId.value)
     }
-
     console.log('sessionId:', currentSessionId.value)
     console.log('当前会话记录数:', chatRecords.value.length)
 
@@ -112,59 +111,64 @@ onMounted(async () => {
 const handleNewChat = async () => {
   try {
     console.log('开始创建新会话')
+    // 保存当前会话记录
+    await saveUserMsg(userId.value)
+    console.log('保存当前会话')
+    // 加载历史记录，并显示到页面上
+    const historyResponse = await loadHistory(userId.value)
+    console.log('获取历史会话')
+    // 按更新时间降序排序
+    const sortedHistory = historyResponse.msg.sort((a, b) =>
+      new Date(b.update_time).getTime() - new Date(a.update_time).getTime()
+    )
+    // 转换为ChatRecord格式并更新列表
+    chatRecords.value = sortedHistory.map(session => ({
+      id: session.sessionid,
+      title: session.abstract,
+      timestamp: new Date(session.update_time),
+      userid: userId.value
+    }))
     // 清空当前聊天消息
     messages.value = []
-
     // 创建新的会话
     const response = await createNewSession(userId.value)
     currentSessionId.value = response.sessionid
-
-    // 创建新的聊天记录
-    const now = new Date()
-    const chatRecord: ChatRecord = {
-      id: currentSessionId.value,
-      title: `会话 ${currentSessionId.value.slice(-8)}`,
-      timestamp: now,
-      userid: userId.value
-    }
-    // 添加到聊天记录列表的开头
-    chatRecords.value.unshift(chatRecord)
-    console.log('新会话创建成功, sessionId:', currentSessionId.value)
-    console.log('当前会话记录数:', chatRecords.value.length)
-  } catch (error) {
+    console.log('创建新会话')
+  }catch (error) {
     console.error('创建新会话失败:', error)
   }
 }
 // 新建带话题的聊天
 const handleTopicChat = async (topic: string) => {
   try {
-    console.log('开始创建话题会话:', topic)
+    console.log('topic-开始创建话题会话:', topic)
+    //保存当前会话记录
+    await saveUserMsg(userId.value)
+    console.log('topic-保存当前会话')
+    //加载历史记录，并显示到页面上
+    const historyResponse = await loadHistory(userId.value)
+    console.log('topic-获取历史会话')
+    // 按更新时间降序排序
+    const sortedHistory = historyResponse.msg.sort((a, b) =>
+      new Date(b.update_time).getTime() - new Date(a.update_time).getTime()
+    )
+    // 转换为ChatRecord格式并更新列表
+    chatRecords.value = sortedHistory.map(session => ({
+      id: session.sessionid,
+      title: session.abstract,
+      timestamp: new Date(session.update_time),
+      userid: userId.value
+    }))
     // 清空当前聊天消息
     messages.value = []
-
     // 创建新的会话
     const response = await createNewSession(userId.value)
     currentSessionId.value = response.sessionid
-
-    // 创建新的聊天记录
-    const now = new Date()
-    const chatRecord: ChatRecord = {
-      id: currentSessionId.value,
-      title: `${topic} - ${currentSessionId.value.slice(-8)}`,
-      timestamp: now,
-      userid: userId.value,
-      topic: topic
-    }
-
-    // 添加到聊天记录列表的开头
-    chatRecords.value.unshift(chatRecord)
-    console.log('新话题会话创建成功, sessionId:', currentSessionId.value, 'topic:', topic)
-    console.log('当前会话记录数:', chatRecords.value.length)
-  } catch (error) {
+    console.log('topic-创建新会话')
+    } catch (error) {
     console.error('创建话题会话失败:', error)
   }
 }
-
 // 清空消息
 const handleClearMessages = () => {
   messages.value = []
@@ -272,18 +276,14 @@ const handleDeleteChat = async (sessionId: string) => {
 
     // 测试环境
     const userId = '123' // 使用测试用户ID
-
     // 调用删除API
     await deleteSession(userId, sessionId)
-
     // 从会话记录中移除
     chatRecords.value = chatRecords.value.filter(record => record.id !== sessionId)
-
     // 如果删除的是当前会话，创建新会话
     if (currentSessionId.value === sessionId) {
       handleNewChat()
     }
-
     console.log('会话删除成功:', sessionId)
   } catch (error) {
     console.error('删除会话失败:', error)
