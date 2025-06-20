@@ -62,13 +62,13 @@ export const getUserId = async (): Promise<string> => {
   const STORAGE_KEY = 'ztf_user_id'
   try {
     // 检查本地storage中是否存在用户ID
-    /* 正式环境
+    // 正式环境
     const storedUserId = localStorage.getItem(STORAGE_KEY)
-    */
+
     // 测试环境
-    let storedUserId = localStorage.getItem(STORAGE_KEY)
+    //let storedUserId = localStorage.getItem(STORAGE_KEY)
     // 测试用：设置默认值
-    storedUserId = '123'
+    //storedUserId = '123'
 
     if (storedUserId) {
       return storedUserId
@@ -96,21 +96,18 @@ export const getUserId = async (): Promise<string> => {
  */
 export const createNewSession = async (userid: string): Promise<CreateSessionResponse> => {
   const STORAGE_KEY = 'ztf_session_id'
-
   try {
-    /* 正式环境
+    //正式环境
     const response = await axios.get<CreateSessionResponse>(`${API_BASE_URL}/chat/create_new_chat`, {
       params: {
         userid
       }
     })
-
     // 将会话ID保存到本地storage
     localStorage.setItem(STORAGE_KEY, response.data.sessionid)
     return response.data
-    */
 
-    // 测试环境
+    /*测试环境
     const testSessionId = `session_${Date.now()}`
     const testResponse: CreateSessionResponse = {
       userid: userid,
@@ -120,6 +117,7 @@ export const createNewSession = async (userid: string): Promise<CreateSessionRes
     // 将会话ID保存到本地storage
     localStorage.setItem(STORAGE_KEY, testResponse.sessionid)
     return testResponse
+*/
 
   } catch (error) {
     console.error('创建会话失败:', error)
@@ -156,7 +154,7 @@ export const sendMessage = async (
   story_type: string = ''
 ): Promise<SendMessageResponse> => {
   try {
-    /* 正式环境
+    // 正式环境
     const response = await axios.get<SendMessageResponse>(`${API_BASE_URL}/chat`, {
       params: {
         userid,
@@ -166,15 +164,16 @@ export const sendMessage = async (
       }
     })
     return response.data
-    */
 
-    // 测试环境
+
+    /* 测试环境
     // 模拟后端响应
     const testResponse: SendMessageResponse = {
       sessionid: sessionid,
       system_msg: `测试回复: 收到消息"${user_msg}"，会话ID为${sessionid}${story_type ? '，话题为' + story_type : ''}`
     }
     return testResponse
+    */
 
   } catch (error) {
     console.error('发送消息失败:', error)
@@ -196,7 +195,7 @@ export const loadSpecificSession = async (
   sessionid: string
 ): Promise<LoadSessionResponse> => {
   try {
-    /* 正式环境
+    // 正式环境
     const response = await axios.get<LoadSessionResponse>(`${API_BASE_URL}/load_specific_session`, {
       params: {
         userid,
@@ -204,8 +203,8 @@ export const loadSpecificSession = async (
       }
     })
     return response.data
-    */
 
+/*
     // 测试环境
     // 模拟后端响应
     const testResponse: LoadSessionResponse = {
@@ -221,7 +220,7 @@ export const loadSpecificSession = async (
       }]
     }
     return testResponse
-
+*/
   } catch (error) {
     console.error('加载会话历史记录失败:', error)
     throw error
@@ -238,14 +237,14 @@ export const loadSpecificSession = async (
  */
 export const loadHistory = async (userid: string): Promise<LoadHistoryResponse> => {
   try {
-    /* 正式环境
+    // 正式环境
     const response = await axios.get<LoadHistoryResponse>(`${API_BASE_URL}/chat/load_history`, {
       params: { userid }
     })
     return response.data
-    */
 
-    // 测试环境
+
+    /* 测试环境
     // 模拟后端响应
     const testResponse = {
       msg: [
@@ -261,7 +260,7 @@ export const loadHistory = async (userid: string): Promise<LoadHistoryResponse> 
         }
       ]
     }
-    return testResponse
+    return testResponse*/
 
   } catch (error) {
     console.error('加载历史记录失败:', error)
@@ -280,7 +279,7 @@ export const loadHistory = async (userid: string): Promise<LoadHistoryResponse> 
  */
 export const deleteSession = async (userid: string, sessionid: string): Promise<DeleteSessionResponse> => {
   try {
-    /* 正式环境
+    // 正式环境
     const response = await axios.delete<DeleteSessionResponse>(`${API_BASE_URL}/chat/delete_session`, {
       params: {
         userid,
@@ -288,11 +287,11 @@ export const deleteSession = async (userid: string, sessionid: string): Promise<
       }
     })
     return response.data
-    */
+
 
     // 测试环境
     // 模拟后端响应
-    return { msg: 'success' }
+    //return { msg: 'success' }
 
   } catch (error) {
     console.error('删除会话失败:', error)
@@ -310,20 +309,20 @@ export const deleteSession = async (userid: string, sessionid: string): Promise<
  */
 export const saveUserMsg = async (userid: string): Promise<SaveUserMsgResponse> => {
   try {
-    /* 正式环境
+    // 正式环境
     const response = await axios.get<SaveUserMsgResponse>(`${API_BASE_URL}/chat/save_user_msg`, {
       params: {
         userid
       }
     })
     return response.data
-    */
+
 
     // 测试环境
-    const testResponse: SaveUserMsgResponse = {
-      msg: '保存成功'
-    }
-    return testResponse
+    //const testResponse: SaveUserMsgResponse = {
+    //  msg: '保存成功'
+    //}
+    //return testResponse
   } catch (error) {
     console.error('保存用户消息失败:', error)
     throw error
