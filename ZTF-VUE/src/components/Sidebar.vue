@@ -45,7 +45,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { deleteSession } from '../api/ftbAPI'
 
 // 定义组件名称
@@ -57,11 +56,12 @@ interface ChatRecord {
   id: string
   title: string
   timestamp: Date
-  user_id: string
+  userid: string
   topic?: string
 }
 
-const props = defineProps<{
+//直接使用defineProps而不赋值给变量
+defineProps<{
   chatRecords: ChatRecord[]
 }>()
 
