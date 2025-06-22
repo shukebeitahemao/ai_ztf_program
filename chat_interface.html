@@ -171,6 +171,27 @@
             color: #333;
         }
 
+        /* 打字机效果 */
+        .message.typing .message-content::after {
+            content: '|';
+            animation: blink 1s infinite;
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        @keyframes blink {
+
+            0%,
+            50% {
+                opacity: 1;
+            }
+
+            51%,
+            100% {
+                opacity: 0;
+            }
+        }
+
         /* 输入区域 */
         .chat-input {
             padding: 24px;
@@ -182,6 +203,7 @@
             display: flex;
             gap: 12px;
             align-items: flex-end;
+            position: relative;
         }
 
         .input-field {
@@ -221,6 +243,79 @@
         .send-btn:disabled {
             background-color: #d1d5db;
             cursor: not-allowed;
+        }
+
+        /* 语音按钮样式 */
+        .voice-btn {
+            padding: 12px;
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            min-width: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .voice-btn:hover:not(:disabled) {
+            background-color: #4f46e5;
+        }
+
+        .voice-btn:disabled {
+            background-color: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        .voice-btn.recording {
+            background-color: #dc2626;
+            animation: pulse 1.5s infinite;
+        }
+
+        .voice-btn.recording:hover {
+            background-color: #b91c1c;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* 语音状态提示 */
+        .voice-status {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #374151;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 100;
+        }
+
+        .voice-status::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #374151;
         }
 
         /* 历史记录侧边栏 */
@@ -415,7 +510,8 @@
                         <div class="empty-icon">💬</div>
                         <div>开始新的对话吧！</div>
                     </div>
-                    <div v-for="message in messages" :key="message.id" class="message" :class="message.type">
+                    <div v-for="message in messages" :key="message.id" class="message"
+                        :class="[message.type, { typing: message.isTyping }]">
                         <div class="message-avatar">
                             {{ message.type === 'user' ? '我' : 'AI' }}
                         </div>
@@ -430,8 +526,18 @@
                 <!-- 输入区域 -->
                 <div class="chat-input">
                     <div class="input-container">
-                        <textarea v-model="inputMessage" class="input-field" placeholder="输入您的消息..."
+                        <!-- 语音状态提示 -->
+                        <div v-if="voiceStatus" class="voice-status">{{ voiceStatus }}</div>
+
+                        <textarea v-model="inputMessage" class="input-field" placeholder="输入您的消息或点击语音按钮..."
                             @keydown.enter.prevent="sendMessage" @input="autoResize" ref="inputField"></textarea>
+
+                        <!-- 语音按钮 -->
+                        <button class="voice-btn" :class="{ recording: isRecording }" @click="toggleAudioRecording"
+                            :disabled="isLoading || !recordingSupported" :title="isRecording ? '点击停止录音' : '点击开始录音'">
+                            {{ isRecording ? '🛑' : '🎤' }}
+                        </button>
+
                         <button class="send-btn" @click="sendMessage" :disabled="!inputMessage.trim() || isLoading">
                             发送
                         </button>
@@ -489,8 +595,20 @@
                     storyOptions: ['A', 'B', 'C', 'D'],
                     selectedStoryType: 'x', // 默认值
 
+                    // 语音录制相关
+                    isRecording: false,
+                    voiceStatus: '',
+                    mediaRecorder: null,
+                    audioStream: null,
+                    recordedChunks: [],
+                    recordingSupported: false,
+
                     // API配置
-                    baseURL: 'http://localhost:8000'
+                    baseURL: 'http://localhost:8000',
+
+                    // 音频播放相关
+                    audioEnabled: false,
+                    audioContext: null
                 };
             },
             computed: {
@@ -525,6 +643,7 @@
                 await this.initializeUser();
                 await this.loadHistory();
                 this.setupBeforeUnload();
+                this.initializeAudioRecording();
             },
             methods: {
                 // 初始化用户
@@ -573,6 +692,9 @@
                         const sessionData = response.data.msg[0];
                         this.currentSessionId = sessionId;
 
+                        // 保存当前sessionId到localStorage
+                        localStorage.setItem('currentSessionId', sessionId);
+
                         // 解析历史消息
                         let historyMessages = [];
                         try {
@@ -609,6 +731,9 @@
                         this.currentSessionId = response.data.session_id;
                         console.log('新会话创建成功 - sessionId:', this.currentSessionId);
 
+                        // 保存sessionId到localStorage
+                        localStorage.setItem('currentSessionId', this.currentSessionId);
+
                         this.messages = [];
                         this.selectedStoryType = 'x';
                         this.inputMessage = '';
@@ -627,6 +752,9 @@
 
                     const userMessage = this.inputMessage.trim();
                     this.inputMessage = '';
+
+                    // 启用音频（用户交互触发）
+                    await this.enableAudio();
 
                     // 添加用户消息
                     this.messages.push({
@@ -660,12 +788,8 @@
                         const encodedUserMsg = encodeURIComponent(userMessage);
                         const response = await axios.get(`${this.baseURL}/chat?userid=${this.userId}&sessionid=${this.currentSessionId}&user_msg=${encodedUserMsg}&story_type=${this.selectedStoryType}`);
 
-                        // 添加系统回复
-                        this.messages.push({
-                            id: Date.now() + 1,
-                            type: 'system',
-                            content: response.data.system_msg
-                        });
+                        // 添加系统回复，使用打字机效果和语音播放
+                        await this.addSystemMessageWithEffects(response.data.system_msg, response.data.audio_data, response.data.audio_duration);
 
                         // 重新加载历史记录
                         await this.loadHistory();
@@ -696,6 +820,9 @@
                         await axios.get(`${this.baseURL}/chat/delete_session?user_id=${this.userId}&session_id=${this.currentSessionId}`);
 
                         this.messages = [];
+
+                        // 清空localStorage中的sessionId
+                        localStorage.removeItem('currentSessionId');
                         this.currentSessionId = '';
                         this.selectedStoryType = 'x';
 
@@ -768,7 +895,483 @@
                             }
                         }
                     });
-                }
+                },
+
+                // 初始化音频录制
+                async initializeAudioRecording() {
+                    // 检查浏览器是否支持MediaRecorder
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        console.warn('当前浏览器不支持音频录制功能');
+                        this.recordingSupported = false;
+                        return;
+                    }
+
+                    // 检查HTTPS和本地环境（放宽限制）
+                    if (location.protocol !== 'https:' &&
+                        location.protocol !== 'http:' &&
+                        location.hostname !== 'localhost' &&
+                        location.hostname !== '127.0.0.1' &&
+                        location.hostname !== '' &&
+                        !location.hostname.includes('localhost')) {
+                        console.warn('音频录制需要HTTPS协议或本地环境');
+                        this.recordingSupported = false;
+                        return;
+                    }
+
+                    // 对于file://协议，给出友好提示但仍然尝试
+                    if (location.protocol === 'file:') {
+                        console.warn('建议使用HTTP服务器访问以获得最佳体验');
+                    }
+
+                    try {
+                        // 测试麦克风权限
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        stream.getTracks().forEach(track => track.stop()); // 立即停止测试流
+
+                        this.recordingSupported = true;
+                        console.log('音频录制功能已准备就绪');
+                    } catch (error) {
+                        console.error('麦克风权限获取失败:', error);
+                        this.recordingSupported = false;
+
+                        if (error.name === 'NotAllowedError') {
+                            setTimeout(() => {
+                                alert('麦克风权限被拒绝，请在浏览器设置中允许麦克风权限后刷新页面');
+                            }, 1000);
+                        }
+                    }
+                },
+
+                // 切换音频录制状态
+                async toggleAudioRecording() {
+                    if (!this.recordingSupported) {
+                        alert('当前浏览器不支持音频录制功能，请使用Chrome、Edge或其他支持的浏览器');
+                        return;
+                    }
+
+                    if (this.isRecording) {
+                        // 停止录音
+                        await this.stopRecording();
+                    } else {
+                        // 开始录音
+                        await this.startRecording();
+                    }
+                },
+
+                // 开始录音
+                async startRecording() {
+                    try {
+                        this.voiceStatus = '正在开始录音...';
+
+                        // 获取音频流
+                        this.audioStream = await navigator.mediaDevices.getUserMedia({
+                            audio: {
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                sampleRate: 44100
+                            }
+                        });
+
+                        // 创建MediaRecorder
+                        this.mediaRecorder = new MediaRecorder(this.audioStream, {
+                            mimeType: 'audio/webm'
+                        });
+
+                        this.recordedChunks = [];
+
+                        // 设置事件监听器
+                        this.mediaRecorder.ondataavailable = (event) => {
+                            if (event.data.size > 0) {
+                                this.recordedChunks.push(event.data);
+                            }
+                        };
+
+                        this.mediaRecorder.onstop = async () => {
+                            this.voiceStatus = '录音完成，正在上传...';
+                            await this.uploadAudio();
+                        };
+
+                        // 开始录音
+                        this.mediaRecorder.start();
+                        this.isRecording = true;
+                        this.voiceStatus = '正在录音中...';
+
+                        console.log('开始录音');
+                    } catch (error) {
+                        console.error('开始录音失败:', error);
+                        this.voiceStatus = '录音失败，请检查麦克风权限';
+
+                        setTimeout(() => {
+                            this.voiceStatus = '';
+                        }, 3000);
+                    }
+                },
+
+                // 停止录音
+                async stopRecording() {
+                    if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+                        this.mediaRecorder.stop();
+                        this.isRecording = false;
+                        this.voiceStatus = '正在处理录音...';
+
+                        // 停止音频流
+                        if (this.audioStream) {
+                            this.audioStream.getTracks().forEach(track => track.stop());
+                        }
+
+                        console.log('停止录音');
+                    }
+                },
+
+                // 上传音频到后端并进行语音识别
+                async uploadAudio() {
+                    try {
+                        if (this.recordedChunks.length === 0) {
+                            this.voiceStatus = '没有录音数据';
+                            return;
+                        }
+
+                        // 确保有sessionId
+                        await this.ensureSessionId();
+
+                        this.voiceStatus = '正在进行语音识别...';
+
+                        // 创建音频Blob
+                        const audioBlob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+
+                        // 创建FormData
+                        const formData = new FormData();
+                        formData.append('audio', audioBlob, `recording_${Date.now()}.webm`);
+                        formData.append('user_id', this.userId);
+                        formData.append('session_id', this.currentSessionId);
+                        formData.append('story_type', this.selectedStoryType);
+
+                        // 发送到后端进行语音识别和AI回复
+                        const response = await fetch(`${this.baseURL}/upload_audio`, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+
+                            if (result.recognized_text) {
+                                // 添加用户语音消息（显示识别的文字）
+                                this.messages.push({
+                                    id: Date.now(),
+                                    type: 'user',
+                                    content: `🎤 ${result.recognized_text}`
+                                });
+
+                                // 添加AI回复，使用打字机效果和语音播放
+                                if (result.ai_response) {
+                                    await this.addSystemMessageWithEffects(
+                                        result.ai_response,
+                                        result.ai_audio_data,
+                                        result.ai_audio_duration
+                                    );
+                                }
+
+                                this.voiceStatus = '语音识别完成';
+                                console.log('语音识别结果:', result.recognized_text);
+
+                                // 重新加载历史记录
+                                await this.loadHistory();
+                            } else {
+                                this.voiceStatus = '语音识别失败';
+                            }
+                        } else {
+                            throw new Error('语音处理失败');
+                        }
+                    } catch (error) {
+                        console.error('语音处理失败:', error);
+                        this.voiceStatus = '语音处理失败，请重试';
+                    }
+
+                    setTimeout(() => {
+                        this.voiceStatus = '';
+                        this.scrollToBottom();
+                    }, 3000);
+                },
+
+                // 确保有sessionId
+                async ensureSessionId() {
+                    if (!this.currentSessionId) {
+                        // 检查localStorage
+                        const storedSessionId = localStorage.getItem('currentSessionId');
+                        if (storedSessionId) {
+                            this.currentSessionId = storedSessionId;
+                        } else {
+                            // 创建新会话
+                            await this.createNewChat();
+                        }
+                    }
+                },
+
+                // 添加系统消息并播放打字机效果和语音
+                async addSystemMessageWithEffects(messageText, audioData, audioDuration) {
+                    if (!messageText) return;
+
+                    // 添加空的系统消息
+                    const messageId = Date.now() + 1;
+                    this.messages.push({
+                        id: messageId,
+                        type: 'system',
+                        content: '',
+                        isTyping: true
+                    });
+
+                    this.scrollToBottom();
+
+                    // 同时启动语音播放和打字机效果
+                    const audioPromise = this.startAudioPlayback(audioData);
+                    const typingPromise = this.typewriterEffect(messageId, messageText, audioDuration || 3);
+
+                    // 等待两个效果都完成
+                    await Promise.allSettled([audioPromise, typingPromise]);
+
+                    // 标记打字完成
+                    const messageIndex = this.messages.findIndex(msg => msg.id === messageId);
+                    if (messageIndex !== -1) {
+                        this.messages[messageIndex].isTyping = false;
+                    }
+                },
+
+                // 启动音频播放（非阻塞）
+                async startAudioPlayback(audioData) {
+                    if (!audioData) {
+                        console.log('没有音频数据，跳过播放');
+                        return;
+                    }
+
+                    // 检查音频数据是否为空字符串
+                    if (audioData === '') {
+                        console.log('音频数据为空，跳过播放');
+                        return;
+                    }
+
+                    // 首次播放时尝试启用音频
+                    if (!this.audioEnabled) {
+                        await this.enableAudio();
+                    }
+
+                    try {
+                        console.log('准备播放音频，数据长度:', audioData.length);
+                        const audioElement = await this.playAudioFromBase64(audioData);
+                        if (audioElement) {
+                            console.log('语音播放已启动');
+                        } else {
+                            console.log('语音播放被跳过（可能由于浏览器限制）');
+                        }
+                    } catch (error) {
+                        console.warn('语音播放失败，但不影响文字显示:', error.message);
+                    }
+                },
+
+                // 启用音频播放（通过用户交互）
+                async enableAudio() {
+                    if (this.audioEnabled) return;
+
+                    try {
+                        // 创建一个短暂的音频上下文来"解锁"音频播放
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                        // 播放一个静音的短音频来启用音频
+                        const buffer = this.audioContext.createBuffer(1, 1, 22050);
+                        const source = this.audioContext.createBufferSource();
+                        source.buffer = buffer;
+                        source.connect(this.audioContext.destination);
+                        source.start();
+
+                        this.audioEnabled = true;
+                        console.log('音频播放已启用');
+                    } catch (error) {
+                        console.warn('无法启用音频播放:', error);
+                    }
+                },
+
+                // 打字机效果
+                async typewriterEffect(messageId, fullText, duration) {
+                    const messageIndex = this.messages.findIndex(msg => msg.id === messageId);
+                    if (messageIndex === -1) return;
+
+                    const chars = Array.from(fullText); // 支持Unicode字符
+                    const totalChars = chars.length;
+                    const interval = Math.max(50, (duration * 1000) / totalChars); // 最小50ms间隔
+
+                    for (let i = 0; i <= totalChars; i++) {
+                        if (messageIndex >= 0 && messageIndex < this.messages.length) {
+                            this.messages[messageIndex].content = chars.slice(0, i).join('');
+                            this.scrollToBottom();
+                        }
+
+                        if (i < totalChars) {
+                            await new Promise(resolve => setTimeout(resolve, interval));
+                        }
+                    }
+                },
+
+                // 从Base64播放音频
+                async playAudioFromBase64(base64Data) {
+                    return new Promise((resolve, reject) => {
+                        try {
+                            // 检测音频格式
+                            const mimeType = this.detectAudioMimeType(base64Data);
+                            console.log('检测到音频格式:', mimeType);
+
+                            // 创建音频URL
+                            const audioBlob = this.base64ToBlob(base64Data, mimeType);
+
+                            if (audioBlob.size === 0) {
+                                console.warn('音频数据为空');
+                                resolve(null);
+                                return;
+                            }
+
+                            console.log('音频Blob大小:', audioBlob.size, '字节');
+                            const audioUrl = URL.createObjectURL(audioBlob);
+
+                            // 创建音频元素
+                            const audio = new Audio(audioUrl);
+
+                            // 设置音频属性
+                            audio.preload = 'auto';
+                            audio.volume = 0.8;
+
+                            let isResolved = false;
+
+                            // 音频可以播放时
+                            audio.oncanplaythrough = () => {
+                                if (!isResolved) {
+                                    console.log('音频准备就绪，开始播放');
+
+                                    // 使用用户交互触发播放（避免自动播放限制）
+                                    const playPromise = audio.play();
+
+                                    if (playPromise !== undefined) {
+                                        playPromise.then(() => {
+                                            if (!isResolved) {
+                                                isResolved = true;
+                                                resolve(audio);
+                                            }
+                                        }).catch((error) => {
+                                            if (!isResolved) {
+                                                isResolved = true;
+                                                // 根据错误类型进行不同处理
+                                                if (error.name === 'NotAllowedError') {
+                                                    console.warn('音频自动播放被阻止，需要用户交互');
+                                                    resolve(null);
+                                                } else if (error.name === 'AbortError') {
+                                                    console.warn('音频播放被中断，可能是快速切换导致');
+                                                    resolve(null);
+                                                } else if (error.name === 'NotSupportedError') {
+                                                    console.warn('音频格式不支持');
+                                                    resolve(null);
+                                                } else {
+                                                    console.error('音频播放失败:', error);
+                                                    resolve(null); // 改为resolve而不是reject，避免阻断流程
+                                                }
+                                            }
+                                        });
+                                    } else {
+                                        // 旧浏览器兼容
+                                        if (!isResolved) {
+                                            isResolved = true;
+                                            resolve(audio);
+                                        }
+                                    }
+                                }
+                            };
+
+                            // 音频加载错误
+                            audio.onerror = (error) => {
+                                if (!isResolved) {
+                                    isResolved = true;
+                                    console.error('音频加载错误:', error);
+                                    URL.revokeObjectURL(audioUrl);
+                                    reject(error);
+                                }
+                            };
+
+                            // 音频播放结束
+                            audio.onended = () => {
+                                URL.revokeObjectURL(audioUrl);
+                                console.log('音频播放完成');
+                            };
+
+                            // 音频中止
+                            audio.onabort = () => {
+                                URL.revokeObjectURL(audioUrl);
+                                console.log('音频播放被中止');
+                            };
+
+                            // 设置超时处理
+                            setTimeout(() => {
+                                if (!isResolved) {
+                                    isResolved = true;
+                                    console.warn('音频加载超时，继续执行');
+                                    resolve(null);
+                                }
+                            }, 3000); // 3秒超时
+
+                        } catch (error) {
+                            reject(error);
+                        }
+                    });
+                },
+
+                // Base64转Blob
+                base64ToBlob(base64, mimeType) {
+                    try {
+                        const byteCharacters = atob(base64);
+                        const byteNumbers = new Array(byteCharacters.length);
+
+                        for (let i = 0; i < byteCharacters.length; i++) {
+                            byteNumbers[i] = byteCharacters.charCodeAt(i);
+                        }
+
+                        const byteArray = new Uint8Array(byteNumbers);
+                        return new Blob([byteArray], { type: mimeType });
+                    } catch (error) {
+                        console.error('Base64解码失败:', error);
+                        return new Blob([], { type: mimeType });
+                    }
+                },
+
+                // 检测音频格式
+                detectAudioMimeType(base64Data) {
+                    try {
+                        // 解码前几个字节来检测文件类型
+                        const header = atob(base64Data.substring(0, 20));
+
+                        // WAV文件头
+                        if (header.startsWith('RIFF') && header.includes('WAVE')) {
+                            return 'audio/wav';
+                        }
+                        // MP3文件头
+                        else if (header.charCodeAt(0) === 0xFF && (header.charCodeAt(1) & 0xE0) === 0xE0) {
+                            return 'audio/mpeg';
+                        }
+                        // OGG文件头
+                        else if (header.startsWith('OggS')) {
+                            return 'audio/ogg';
+                        }
+                        // WebM文件头
+                        else if (header.includes('webm')) {
+                            return 'audio/webm';
+                        }
+                        // 默认使用WAV
+                        else {
+                            console.warn('无法识别音频格式，使用默认WAV格式');
+                            return 'audio/wav';
+                        }
+                    } catch (error) {
+                        console.error('音频格式检测失败:', error);
+                        return 'audio/wav';
+                    }
+                },
+
+
             }
         }).mount('#app');
     </script>
