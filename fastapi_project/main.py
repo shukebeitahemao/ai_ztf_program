@@ -270,7 +270,8 @@ def delete_session(
     userid: str = Query(..., description="用户ID"),
     sessionid: str = Query(..., description="会话ID")
 ):
-    del msg_pool[userid][sessionid]
+    #deletesession就是从列表删除，不需要对内存进行操作
+    #del msg_pool[userid][sessionid]
     print('删除会话后的msg_pool',msg_pool)
     #删除数据库中的会话
     excute_query = f"""
