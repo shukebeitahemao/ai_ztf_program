@@ -195,7 +195,7 @@ def load_history(
     SELECT session_id,update_time,abstract FROM message WHERE user_id = '{userid}' ;
     """
     history = db_util.execute_query(excute_query)
-    print('没有历史数据的情况',history)
+    # print('没有历史数据的情况',history)
     if not history:
         return {"msg": [{'session_id':10001,'abstrc':'10001','update_time':'1999/01/01 12:00:00'}]}
     formatted_history = []
@@ -270,8 +270,9 @@ def delete_session(
     userid: str = Query(..., description="用户ID"),
     sessionid: str = Query(..., description="会话ID")
 ):
-    #deletesession就是从列表删除，不需要对内存进行操作
-    #del msg_pool[userid][sessionid]
+    #deletesession就是从列表删除，但是在create_new_chat中会重新创建一个会话,所以可能会要求删除内存中的会话
+    if userid in msg_pool and sessionid in msg_pool[userid]:
+        del msg_pool[userid][sessionid]
     print('删除会话后的msg_pool',msg_pool)
     #删除数据库中的会话
     excute_query = f"""
