@@ -32,6 +32,7 @@ const userId = ref('')
 onMounted(async () => {
   try {
     userId.value = await getUserId()
+    console.log('获取到的用户ID:', userId.value)
   } catch (error) {
     console.error('获取用户ID失败:', error)
   }

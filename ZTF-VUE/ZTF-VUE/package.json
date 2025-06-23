@@ -20,6 +20,8 @@
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "^1.2.51",
+    "@iconify/vue": "^5.0.0",
     "@playwright/test": "^1.51.1",
     "@tsconfig/node22": "^22.0.1",
     "@types/jsdom": "^21.1.7",

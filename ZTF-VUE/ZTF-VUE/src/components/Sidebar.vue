@@ -45,7 +45,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { deleteSession } from '../api/ftbAPI'
 
 // 定义组件名称
@@ -57,11 +56,12 @@ interface ChatRecord {
   id: string
   title: string
   timestamp: Date
-  user_id: string
+  userid: string
   topic?: string
 }
 
-const props = defineProps<{
+//直接使用defineProps而不赋值给变量
+defineProps<{
   chatRecords: ChatRecord[]
 }>()
 
@@ -74,18 +74,15 @@ const emit = defineEmits<{
 // 处理删除
 const handleDelete = async (record: ChatRecord) => {
   try {
-    /* 正式环境
+    //正式环境
     const userId = localStorage.getItem('ztf_user_id')
     if (!userId) {
       console.error('未找到用户ID')
       return
     }
-    */
-
-    // 测试环境
-    const userId = '123' // 使用测试用户ID
-
+    console.log('删除会话，参数：', { userId, sessionId: record.id })
     await deleteSession(userId, record.id)
+    console.log('删除会话成功')
     emit('delete-chat', record.id)
   } catch (error) {
     console.error('删除会话失败:', error)

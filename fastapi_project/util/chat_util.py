@@ -65,9 +65,9 @@ def split_txt_files(source_file='fastapi_project//chat//txt_file', output_file='
 #初始化llamaindex相关配置,.默认使用deepseek
 def initialize_llamaindex(deepseekapi, offline_mode=False):
     # 检查环境变量是否设置了离线模式
-    if os.getenv('HUGGINGFACE_OFFLINE', 'false').lower() == 'true':
-        offline_mode = True
-        print("检测到环境变量 HUGGINGFACE_OFFLINE=true，启用离线模式")
+    # if os.getenv('HUGGINGFACE_OFFLINE', 'false').lower() == 'true':
+    #     offline_mode = True
+    #     print("检测到环境变量 HUGGINGFACE_OFFLINE=true，启用离线模式")
     # 初始化 DeepSeek 客户端
     llm = DeepSeek(
         api_key=deepseekapi,  # 替换为你的 DeepSeek API key

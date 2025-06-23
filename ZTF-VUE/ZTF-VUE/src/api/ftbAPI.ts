@@ -19,15 +19,15 @@ interface SendMessageResponse {
  * 加载特定会话的历史记录
  * 功能：根据会话ID和用户ID加载特定会话的历史记录
  * 参数：
- *   - user_id: 用户ID
- *   - session_id: 会话ID
+ *   - userid: 用户ID
+ *   - sessionid: 会话ID
  * 返回值：
  *   - Promise<LoadSessionResponse>: 返回会话历史记录
  */
 interface LoadSessionResponse {
   msg: [{
-    user_id: string;
-    session_id: string;
+    userid: string;
+    sessionid: string;
     history: string;
   }]
 }
@@ -59,26 +59,25 @@ interface SaveUserMsgResponse {
  *   - 捕获并记录获取失败错误
  */
 export const getUserId = async (): Promise<string> => {
+  console.log('**getUserId')
   const STORAGE_KEY = 'ztf_user_id'
+  console.log('STORAGE_KEY:', STORAGE_KEY)
   try {
     // 检查本地storage中是否存在用户ID
-    /* 正式环境
+    // 正式环境
     const storedUserId = localStorage.getItem(STORAGE_KEY)
-    */
-    // 测试环境
-    let storedUserId = localStorage.getItem(STORAGE_KEY)
-    // 测试用：设置默认值
-    //storedUserId = '123'
-
+    console.log('**本地存储的用户ID:', storedUserId)
     if (storedUserId) {
+      console.log('if-本地存储的用户ID:', storedUserId)
       return storedUserId
     }
     // 如果本地没有用户ID，从后端获取新的用户ID
     const response = await axios.get<CreateUserResponse>(`${API_BASE_URL}/create_user`)
     const { user_id } = response.data
-
+    console.log('else-后端获取的用户ID:', user_id)
     // 将新的用户ID保存到本地storage
     localStorage.setItem(STORAGE_KEY, user_id)
+    console.log('**将新的用户ID保存到本地storage:', user_id)
     return user_id
   } catch (error) {
     console.error('获取用户ID失败:', error)
@@ -90,37 +89,22 @@ export const getUserId = async (): Promise<string> => {
  * 创建新的会话
  * 功能：创建新的聊天会话，获取会话ID
  * 参数：
- *   - user_id: 用户ID
+ *   - userid: 用户ID
  * 返回值：
  *   - Promise<CreateSessionResponse>: 返回用户ID和会话ID
  */
 export const createNewSession = async (userid: string): Promise<CreateSessionResponse> => {
   const STORAGE_KEY = 'ztf_session_id'
-
   try {
     //正式环境
-    const response = await axios.get<CreateSessionResponse>(`${API_BASE_URL}/chat/create_new_chat`, {
+    const response = await axios.get<CreateSessionResponse>(`${API_BASE_URL}/create_new_chat`, {
       params: {
         userid
       }
     })
-
-    // 将会话ID保存到本地storage
+    // 2. 将会话ID保存到本地storage
     localStorage.setItem(STORAGE_KEY, response.data.session_id)
     return response.data
-
-
-    // 测试环境
-    // const testSessionId = `session_${Date.now()}`
-    // const testResponse: CreateSessionResponse = {
-    //   user_id: user_id,
-    //   session_id: testSessionId
-    // }
-
-    // 将会话ID保存到本地storage
-    localStorage.setItem(STORAGE_KEY, testResponse.session_id)
-    return testResponse
-
   } catch (error) {
     console.error('创建会话失败:', error)
     throw error
@@ -128,12 +112,23 @@ export const createNewSession = async (userid: string): Promise<CreateSessionRes
 }
 
 /**
+ * 获取当前会话ID
+ * 功能：从本地storage获取当前会话ID
+ * 返回值：
+ *   - string | null: 返回会话ID，如果不存在则返回null
+ */
+export const getCurrentSessionId = (): string | null => {
+  const STORAGE_KEY = 'ztf_session_id'
+  return localStorage.getItem(STORAGE_KEY)
+}
+
+/**
  * 发送消息到后端
  * 功能：发送用户消息并获取系统回复
  * 参数：
  *   - user_msg: 用户输入的消息内容
- *   - session_id: 当前会话ID
- *   - user_id: 用户ID
+ *   - sessionid: 当前会话ID
+ *   - userid: 用户ID
  *   - story_type: 话题类型（可选）
  * 返回值：
  *   - Promise<SendMessageResponse>: 返回会话ID和系统回复
@@ -142,7 +137,7 @@ export const sendMessage = async (
   user_msg: string,
   sessionid: string,
   userid: string,
-  story_type: string = 'x'
+  story_type: string = ''
 ): Promise<SendMessageResponse> => {
   try {
     // 正式环境
@@ -154,17 +149,14 @@ export const sendMessage = async (
         story_type
       }
     })
+    console.log('发送消息参数:', {
+      userid,
+      sessionid,
+      user_msg,
+      story_type
+    })
+    console.log('发送消息返回值:', response.data)
     return response.data
-
-
-    // 测试环境
-    // 模拟后端响应
-    // const testResponse: SendMessageResponse = {
-    //   sessionid: session_id,
-    //   system_msg: `测试回复: 收到消息"${user_msg}"，会话ID为${session_id}${story_type ? '，话题为' + story_type : ''}`
-    // }
-    //return testResponse
-
   } catch (error) {
     console.error('发送消息失败:', error)
     throw error
@@ -175,42 +167,24 @@ export const sendMessage = async (
  * 加载特定会话的历史记录
  * 功能：根据会话ID和用户ID加载特定会话的历史记录
  * 参数：
- *   - user_id: 用户ID
- *   - session_id: 会话ID
+ *   - userid: 用户ID
+ *   - sessionid: 会话ID
  * 返回值：
  *   - Promise<LoadSessionResponse>: 返回会话历史记录
  */
 export const loadSpecificSession = async (
-  user_id: string,
-  session_id: string
+  userid: string,
+  sessionid: string
 ): Promise<LoadSessionResponse> => {
   try {
-    /* 正式环境
+    // 正式环境
     const response = await axios.get<LoadSessionResponse>(`${API_BASE_URL}/load_specific_session`, {
       params: {
-        user_id,
-        session_id
+        userid,
+        sessionid
       }
     })
     return response.data
-    */
-
-    // 测试环境
-    // 模拟后端响应
-    const testResponse: LoadSessionResponse = {
-      msg: [{
-        user_id: user_id,
-        session_id: session_id,
-        history: JSON.stringify([
-          { role: 'user', content: '测试消息1' },
-          { role: 'assistant', content: '测试回复1' },
-          { role: 'user', content: '测试消息2' },
-          { role: 'assistant', content: '测试回复2' }
-        ])
-      }]
-    }
-    return testResponse
-
   } catch (error) {
     console.error('加载会话历史记录失败:', error)
     throw error
@@ -218,57 +192,45 @@ export const loadSpecificSession = async (
 }
 
 /**
- * 加载用户历史会话记录
+ * 加载历史记录
+ * 功能：加载用户的历史会话记录
+ * 参数：
+ *   - userid: 用户ID
+ * 返回值：
+ *   - Promise: 包含历史会话记录的响应
  */
 export const loadHistory = async (userid: string): Promise<LoadHistoryResponse> => {
   try {
     // 正式环境
     const response = await axios.get<LoadHistoryResponse>(`${API_BASE_URL}/load_history`, {
       params: { userid }
-    });
-    console.log('缺乏历史记录', response.data)
-    return response.data;
-  } catch (error) {
-    console.error('加载历史记录失败:', error);
-    throw error;
-  }
-};
-
-// 测试环境
-/*
-return {
-  msg: [
-    {
-      session_id: 'test_session_1',
-      abstract: '邹韬奋的教育理念探讨',
-      update_time: '2024-03-11T10:00:00Z'
-    },
-    {
-      session_id: 'test_session_2',
-      abstract: '关于生活书店的对话',
-      update_time: '2024-03-11T09:00:00Z'
-    }
-  ]
-}
- 
-
-/**
-* 删除指定会话
-*/
-export const deleteSession = async (user_id: string, session_id: string): Promise<DeleteSessionResponse> => {
-  try {
-    /* 正式环境
-    const response = await axios.post<DeleteSessionResponse>(`${API_BASE_URL}/chat/delete_session`, {
-      user_id,
-      session_id
     })
     return response.data
-    */
+  } catch (error) {
+    console.error('加载历史记录失败:', error)
+    throw error
+  }
+}
 
-    // 测试环境
-    return {
-      msg: "删除成功"
-    }
+/**
+ * 删除会话
+ * 功能：删除指定的会话记录
+ * 参数：
+ *   - userid: 用户ID
+ *   - sessionid: 会话ID
+ * 返回值：
+ *   - Promise: 包含删除操作的响应
+ */
+export const deleteSession = async (userid: string, sessionid: string): Promise<DeleteSessionResponse> => {
+  try {
+    // 正式环境
+    const response = await axios.get<DeleteSessionResponse>(`${API_BASE_URL}/chat/delete_session`, {
+      params: {
+        userid,
+        sessionid
+      }
+    })
+    return response.data
   } catch (error) {
     console.error('删除会话失败:', error)
     throw error
@@ -276,18 +238,19 @@ export const deleteSession = async (user_id: string, session_id: string): Promis
 }
 
 /**
- * 自动保存用户消息
- * 功能：在用户关闭页面或浏览器时自动保存用户消息
+ * 保存用户消息
+ * 功能：保存用户的消息到后端
  * 参数：
- *   - user_id: 用户ID
+ *   - userid: 用户ID
  * 返回值：
- *   - Promise<SaveUserMsgResponse>: 返回保存状态信息
+ *   - Promise<SaveUserMsgResponse>: 返回保存结果
  */
-export const saveUserMsg = async (user_id: string): Promise<SaveUserMsgResponse> => {
+export const saveUserMsg = async (userid: string): Promise<SaveUserMsgResponse> => {
   try {
+    // 正式环境
     const response = await axios.get<SaveUserMsgResponse>(`${API_BASE_URL}/chat/save_usermsg`, {
       params: {
-        userid: user_id
+        userid
       }
     })
     return response.data
@@ -297,19 +260,7 @@ export const saveUserMsg = async (user_id: string): Promise<SaveUserMsgResponse>
   }
 }
 
-
 /**
-
- * 获取当前会话ID
- * 功能：从本地storage获取当前会话ID
- * 返回值：
- *   - string | null: 返回会话ID，如果不存在则返回null
-
-export const getCurrentSessionId = (): string | null => {
-  const STORAGE_KEY = 'ztf_session_id'
-  return localStorage.getItem(STORAGE_KEY)
-}
-
  * 创建新的聊天记录
  * 功能：创建新的聊天会话，并记录话题信息
  * 参数：
@@ -319,7 +270,7 @@ export const getCurrentSessionId = (): string | null => {
  *   - Promise: 包含服务器响应数据
  * 错误处理：
  *   - 捕获并记录创建失败错误
-
+ */
 export const createNewChat = async (chatTitle: string, topic: string = '') => {
   try {
     const response = await axios.get(`${API_BASE_URL}/chat/create_new_chat`, {
@@ -334,4 +285,3 @@ export const createNewChat = async (chatTitle: string, topic: string = '') => {
     throw error
   }
 }
-*/

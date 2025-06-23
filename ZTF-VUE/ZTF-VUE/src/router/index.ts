@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import ChatAI from '../views/ChatAI.vue'
+import KnowledgeGraph from '../views/KnowledgeGraph.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,6 +15,11 @@ const router = createRouter({
       path: '/chat',
       name: 'chat',
       component: ChatAI
+    },
+    {
+      path: '/knowledge-graph',
+      name: 'knowledge-graph',
+      component: KnowledgeGraph
     },
     {
       path: '/:pathMatch(.*)*',
