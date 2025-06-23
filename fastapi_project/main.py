@@ -252,7 +252,7 @@ def create_user():
     print('创建了新用户后的msg_pool',msg_pool)
     return {"user_id": user_id}
 
-@app.get("/chat/create_new_chat")
+@app.get("/create_new_chat")
 def create_new_chat(
     userid: str = Query(..., description="用户ID")
 ):
@@ -267,11 +267,16 @@ def create_new_chat(
 
 @app.get("/chat/delete_session")
 def delete_session(
-    user_id: str = Query(..., description="用户ID"),
-    session_id: str = Query(..., description="会话ID")
+    userid: str = Query(..., description="用户ID"),
+    sessionid: str = Query(..., description="会话ID")
 ):
-    del msg_pool[user_id][session_id]
+    del msg_pool[userid][sessionid]
     print('删除会话后的msg_pool',msg_pool)
+    #删除数据库中的会话
+    excute_query = f"""
+    DELETE FROM message WHERE user_id = '{userid}' AND session_id = '{sessionid}';
+    """
+    db_util.execute_query(excute_query)
     return {"msg": "删除成功"}
 
 @app.get("/chat/save_usermsg")
