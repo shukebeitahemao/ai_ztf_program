@@ -1,0 +1,204 @@
+{
+    "msg": [
+        {
+            "type": "ATTITUDE",
+            "subject": "法警",
+            "object": "邹韬奋等",
+            "attitude_type": "同情",
+            "start_time": ""
+        },
+        {
+            "type": "ATTITUDE",
+            "subject": "检察官",
+            "object": "邹韬奋等",
+            "attitude_type": "同情",
+            "start_time": "廿七日"
+        },
+        {
+            "type": "ATTITUDE",
+            "subject": "邹韬奋",
+            "object": "爱国的同胞们",
+            "attitude_type": "感激",
+            "start_time": "廿七日"
+        },
+        {
+            "type": "ATTITUDE",
+            "subject": "邹韬奋",
+            "object": "同胞",
+            "attitude_type": "赞扬",
+            "start_time": "廿七日"
+        },
+        {
+            "type": "ATTITUDE",
+            "subject": "侦探",
+            "object": "邹韬奋等",
+            "attitude_type": "同情",
+            "start_time": "几天后"
+        },
+        {
+            "type": "ATTITUDE",
+            "subject": "武装同志",
+            "object": "邹韬奋等",
+            "attitude_type": "同情",
+            "start_time": "几天后"
+        },
+        {
+            "type": "ACT",
+            "subject": "地方法院",
+            "action": "转解",
+            "object": "邹韬奋和章先生",
+            "start_time": "廿七日下午六点钟左右",
+            "end_time": "",
+            "endure_time": ""
+        },
+        {
+            "type": "ACT",
+            "subject": "公安局人员",
+            "action": "押送",
+            "object": "邹韬奋和章先生",
+            "start_time": "廿七日",
+            "end_time": "",
+            "endure_time": ""
+        },
+        {
+            "type": "ACT",
+            "subject": "侦探",
+            "action": "监视",
+            "object": "邹韬奋等",
+            "start_time": "进入公安局后",
+            "end_time": "",
+            "endure_time": "持续数日"
+        },
+        {
+            "type": "ACT",
+            "subject": "武装同志",
+            "action": "监视",
+            "object": "邹韬奋等",
+            "start_time": "进入公安局后",
+            "end_time": "",
+            "endure_time": "持续数日"
+        },
+        {
+            "type": "ACT",
+            "subject": "第三科科长",
+            "action": "询问",
+            "object": "邹韬奋等",
+            "start_time": "三四天后的夜里",
+            "end_time": "",
+            "endure_time": ""
+        },
+        {
+            "type": "ACT",
+            "subject": "公安局",
+            "action": "禁止接见",
+            "object": "邹韬奋等",
+            "start_time": "头几天后",
+            "end_time": "",
+            "endure_time": "持续至离开"
+        },
+        {
+            "type": "EVENT",
+            "description": "邹韬奋和章先生被转解到公安局",
+            "person_infer": ["邹韬奋", "章先生", "法警", "公安局人员"],
+            "position": "上海地方法院到公安局",
+            "start_time": "廿七日下午六点钟左右",
+            "end_time": "",
+            "endure_time": ""
+        },
+        {
+            "type": "EVENT",
+            "description": "邹韬奋和章先生与沈先生等四人相见",
+            "person_infer": ["邹韬奋", "章先生", "沈先生等四人"],
+            "position": "公安局房间",
+            "start_time": "廿七日晚上",
+            "end_time": "",
+            "endure_time": ""
+        },
+        {
+            "type": "EVENT",
+            "description": "第三科科长与邹韬奋等个别谈话",
+            "person_infer": ["第三科科长", "邹韬奋等"],
+            "position": "公安局客厅",
+            "start_time": "三四天后的夜里",
+            "end_time": "",
+            "endure_time": ""
+        },
+        {
+            "type": "REASON",
+            "reason": "访问者非常多导致客厅常告客满",
+            "effect": "当局禁止接见非家属亲友"
+        },
+        {
+            "type": "RELATION",
+            "subject": "侦探",
+            "relationship": "监视",
+            "object": "邹韬奋等",
+            "start_time": "进入公安局后",
+            "end_time": "",
+            "endure_time": "持续数日"
+        },
+        {
+            "type": "RELATION",
+            "subject": "武装同志",
+            "relationship": "监视",
+            "object": "邹韬奋等",
+            "start_time": "进入公安局后",
+            "end_time": "",
+            "endure_time": "持续数日"
+        },
+        {
+            "type": "RELATION",
+            "subject": "邹韬奋",
+            "relationship": "同被关押",
+            "object": "章先生",
+            "start_time": "廿七日",
+            "end_time": "",
+            "endure_time": "持续数日"
+        },
+        {
+            "type": "RELATION",
+            "subject": "邹韬奋",
+            "relationship": "同被关押",
+            "object": "沈先生等四人",
+            "start_time": "进入公安局后",
+            "end_time": "",
+            "endure_time": "持续数日"
+        },
+        {
+            "type": "PROPERTY",
+            "subject": "邹韬奋",
+            "property_type": "身份",
+            "property_value": "救国运动者"
+        },
+        {
+            "type": "PROPERTY",
+            "subject": "章先生",
+            "property_type": "身份",
+            "property_value": "救国运动者"
+        },
+        {
+            "type": "PROPERTY",
+            "subject": "侦探",
+            "property_type": "国籍",
+            "property_value": "中国"
+        },
+        {
+            "type": "PROPERTY",
+            "subject": "武装同志",
+            "property_type": "国籍",
+            "property_value": "中国"
+        },
+        {
+            "type": "PROPERTY",
+            "subject": "沈先生等人的房间",
+            "property_type": "位置",
+            "property_value": "二层楼"
+        },
+        {
+            "type": "PROPERTY",
+            "subject": "沈先生等人的房间",
+            "property_type": "设施",
+            "property_value": "四个小铁床、露台、屏风、圆桌、椅子"
+        }
+    ]
+}

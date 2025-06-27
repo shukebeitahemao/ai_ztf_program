@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Neovis.js Simple Example</title>
+    <style type="text/css">
+        html,
+        body {
+            font: 16pt arial;
+        }
+
+        #viz {
+            width: 900px;
+            height: 700px;
+            border: 1px solid lightgray;
+            font: 22pt arial;
+        }
+    </style>
+</head>
+
+<body onload="draw()">
+    <div id="viz"></div>
+
+    <script src="https://unpkg.com/neovis.js@2.0.2"></script>
+
+    <script type="text/javascript">
+
+        let neoViz;
+
+        function draw() {
+            const config = {
+                containerId: "viz",
+                neo4j: {
+                    // 连接到正确的服务实例
+                    serverUrl: "neo4j://localhost:7687",
+                    serverUser: "neo4j",
+                    serverPassword: "wzdshjw123",
+                    // 最终修正：使用服务实例内部的数据库名称，通常是默认的 'neo4j'
+                    database: "neo4j"
+                },
+                labels: {
+                    Person: {
+                        label: "name",
+                        // value: "pagerank",
+                        // group: "community",
+                        // [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
+                        //     function: {
+                        //         title: (node) => viz.nodeToHtml(node, [
+                        //             "name",
+                        //             "pagerank"
+                        //         ])
+                        //     }
+                        // }
+                    },
+                    Event: {
+                        label: "name",
+                    }
+                },
+                relationships: {
+                    "*": {
+                        caption: "type"
+                    }
+                },
+                // 这是最稳健的查询，无需修改
+                initialCypher: "MATCH (n)-[r]-(m) RETURN n, r, m"
+            };
+
+            neoViz = new NeoVis.default(config);
+            neoViz.render();
+        }
+    </script>
+</body>
+
+</html>

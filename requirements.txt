@@ -1,0 +1,21 @@
+fastapi
+uvicorn
+llama-index
+llama-index-core
+llama-index-llms-deepseek
+llama-index-embeddings-huggingface
+chromadb
+psycopg2-binary
+python-multipart
+requests
+transformers
+torch
+# 阿里云DashScope SDK
+dashscope
+python-dotenv
+httpx
+# 音频处理依赖
+pydub
+ffmpeg-python
+# 音频编码
+base64

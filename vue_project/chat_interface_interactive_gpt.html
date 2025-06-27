@@ -1,0 +1,290 @@
+// Chat Interface rewritten with shadcn/ui + Tailwind + React
+// ---------------------------------------------------------
+// NOTE: place this file under a React project already set up with shadcn/ui
+// Run `npx shadcn-ui@latest add button card textarea scroll-area avatar separator` (and icons via lucide-react)
+// ---------------------------------------------------------
+
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import {
+  Send,
+  Mic,
+  Smile,
+  Image as ImageIcon,
+  Paperclip,
+  Bell,
+  User2,
+  BookOpenText,
+  Coffee,
+  PenLine,
+  MessagesSquare,
+  Plus,
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+// ----------------------------
+// Helpers
+// ----------------------------
+const botAvatar =
+  "https://ai-public.mastergo.com/ai/img_res/a12016d1650d342be8ff445372694bc6.jpg";
+const userAvatar =
+  "https://ai-public.mastergo.com/ai/img_res/b9b4e198f1e040ff9de4933f9954ccda.jpg";
+
+const getTime = () =>
+  new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+// ----------------------------
+// Main Component
+// ----------------------------
+export default function ChatInterface() {
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      role: "bot",
+      text: "您好，我是胡适。很高兴能与您进行学术交流。我们可以探讨新文化运动、实验主义、中国哲学，或者您感兴趣的其他话题。",
+      time: "10:30",
+    },
+    {
+      id: 2,
+      role: "user",
+      text: "胡先生您好，我最近在研究五四运动时期的文学改革，特别是白话文运动。想请教您对当时提倡白话文的初衷和现代意义的看法。",
+      time: "10:31",
+    },
+    {
+      id: 3,
+      role: "bot",
+      text: "这是个很好的问题。提倡白话文的初衷，是为了打破文言文的桎梏，让普通民众也能参与到文化建设中来。我们当时提出\"我手写我口\"的主张，就是要让文字能够真实表达人的思想和情感。\n\n从现代意义来看，白话文运动不仅仅是一场语言革命，更是一场思想解放运动。它打破了旧文化的垄断，为现代中国的文化发展和思想进步开辟了道路。",
+      time: "10:32",
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 自动滚动到底部
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
+  }, [messages]);
+
+  // 发送消息
+  const sendMessage = async () => {
+    const text = input.trim();
+    if (!text) return;
+    const userMsg = {
+      id: Date.now(),
+      role: "user",
+      text,
+      time: getTime(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+
+    try {
+      // const resp = await fetch("/xxxx", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ msg: text }),
+      // });
+      // if (!resp.ok) throw new Error("Network error");
+      // const data = await resp.json();
+      // const botText = data.msg;
+      const botText = "xyz"; // mock
+      const botMsg = {
+        id: Date.now() + 1,
+        role: "bot",
+        text: botText,
+        time: getTime(),
+      };
+      setMessages((prev) => [...prev, botMsg]);
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 2,
+          role: "bot",
+          text: "请求失败，请稍后再试。",
+          time: getTime(),
+        },
+      ]);
+    }
+  };
+
+  const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  // ----------------------------
+  // Render helpers
+  // ----------------------------
+  const renderMessage = (msg: (typeof messages)[number]) => {
+    const isUser = msg.role === "user";
+    const AvatarURL = isUser ? userAvatar : botAvatar;
+
+    return (
+      <motion.div
+        key={msg.id}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.15 }}
+        className={`flex gap-4 ${isUser ? "flex-row-reverse" : ""}`}
+      >
+        <Avatar className="w-10 h-10">
+          <AvatarImage src={AvatarURL} alt="avatar" />
+        </Avatar>
+
+        <div className="flex-1 max-w-[80%]">
+          <Card
+            className={`rounded-2xl shadow-sm ${
+              isUser ? "bg-primary/10 rounded-tr-none" : "rounded-tl-none"
+            }`}
+          >
+            <CardContent className="p-4 whitespace-pre-wrap text-gray-900 text-base leading-relaxed">
+              {msg.text}
+            </CardContent>
+          </Card>
+          <span
+            className={`mt-1 block text-sm text-gray-500 ${
+              isUser ? "text-right" : ""
+            }`}
+          >
+            {msg.time}
+          </span>
+        </div>
+      </motion.div>
+    );
+  };
+
+  return (
+    <div className="h-screen font-serif bg-gray-50">
+      {/* Navbar */}
+      <nav className="fixed inset-x-0 top-0 z-50 h-14 bg-white shadow-sm px-6 flex items-center justify-between">
+        <div className="flex items-center gap-8">
+          <a href="#" className="text-2xl font-pacifico text-primary">
+            logo
+          </a>
+          <div className="hidden lg:flex gap-6 text-base">
+            <a href="#" className="text-gray-600 hover:text-primary">
+              首页
+            </a>
+            <a href="#" className="text-gray-600 hover:text-primary">
+              数字人文馆
+            </a>
+            <a href="#" className="text-primary font-medium">
+              AI 对话
+            </a>
+            <a href="#" className="text-gray-600 hover:text-primary">
+              学术研究
+            </a>
+            <a href="#" className="text-gray-600 hover:text-primary">
+              关于我们
+            </a>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" className="gap-2">
+            <Bell className="w-4 h-4 text-gray-400" /> 消息通知
+          </Button>
+          <Separator orientation="vertical" className="h-5" />
+          <Avatar className="w-8 h-8">
+            <AvatarImage src="https://ai-public.mastergo.com/ai/img_res/ea5fce2476e0151e4f7804687ca3105a.jpg" />
+          </Avatar>
+        </div>
+      </nav>
+
+      {/* Layout Grid */}
+      <div className="pt-14 grid grid-cols-[240px_1fr] h-full">
+        {/* Sidebar */}
+        <aside className="hidden md:flex flex-col bg-white border-r border-gray-200">
+          <div className="p-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-800">对话模式</h2>
+          </div>
+          <ScrollArea className="flex-1 p-2 space-y-2">
+            <Button variant="secondary" className="w-full justify-start gap-3">
+              <User2 className="w-5 h-5" /> 学者模式
+            </Button>
+            <Button variant="ghost" className="w-full justify-start gap-3">
+              <BookOpenText className="w-5 h-5" /> 教育者模式
+            </Button>
+            <Button variant="ghost" className="w-full justify-start gap-3">
+              <Coffee className="w-5 h-5" /> 生活模式
+            </Button>
+            <Button variant="ghost" className="w-full justify-start gap-3">
+              <PenLine className="w-5 h-5" /> 文学创作模式
+            </Button>
+            <Button variant="ghost" className="w-full justify-start gap-3">
+              <MessagesSquare className="w-5 h-5" /> 辩论模式
+            </Button>
+          </ScrollArea>
+          <div className="p-4 border-t border-gray-200">
+            <Button variant="outline" className="w-full gap-2">
+              <Plus className="w-4 h-4" /> 新建对话模式
+            </Button>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex flex-col bg-gray-50">
+          {/* Header */}
+          <header className="p-6 bg-white border-b border-gray-200">
+            <h1 className="text-2xl font-medium text-gray-900">与胡适对话</h1>
+            <p className="mt-2 text-gray-600 text-sm">
+              当前模式：学者模式 - 以学术探讨为主，着重于中国现代文学、哲学思想等领域的交流
+            </p>
+          </header>
+
+          {/* Chat area */}
+          <ScrollArea ref={scrollRef} className="flex-1 p-6 space-y-6">
+            {messages.map(renderMessage)}
+          </ScrollArea>
+
+          {/* Input area */}
+          <div className="p-4 bg-white border-t border-gray-200">
+            <div className="flex items-center gap-4 mb-3">
+              <Button variant="ghost" size="icon">
+                <Smile className="w-5 h-5" />
+              </Button>
+              <Button variant="ghost" size="icon">
+                <ImageIcon className="w-5 h-5" />
+              </Button>
+              <Button variant="ghost" size="icon">
+                <Paperclip className="w-5 h-5" />
+              </Button>
+            </div>
+            <div className="flex gap-4">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                rows={4}
+                placeholder="输入您的问题..."
+                className="flex-1 resize-none"
+              />
+              <div className="flex flex-col gap-2">
+                <Button variant="ghost" size="icon">
+                  <Mic className="w-5 h-5" />
+                </Button>
+                <Button size="icon" onClick={sendMessage}>
+                  <Send className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

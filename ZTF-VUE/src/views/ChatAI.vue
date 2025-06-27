@@ -54,6 +54,7 @@ const chatRecords = ref<ChatRecord[]>([])
 const userId = ref('')
 const currentSessionId = ref('')
 
+<!--合并后的版本-->
 // 路由离开前保存
 onBeforeRouteLeave(async (to, from, next) => {
   try {
@@ -67,6 +68,7 @@ onBeforeRouteLeave(async (to, from, next) => {
   }
   next()
 })
+
 
 // 初始化：获取用户ID和会话ID
 onMounted(async () => {
@@ -124,7 +126,7 @@ const loadHistoryRecords = async () => {
     // 加载历史记录
     const historyResponse = await loadHistory(userId.value)
     console.log('加载历史记录', historyResponse)
-
+<!--合并后的版本-->
     if (!historyResponse || !historyResponse.msg || historyResponse.msg.length === 0) {
       chatRecords.value = []
       return null
@@ -136,7 +138,6 @@ const loadHistoryRecords = async () => {
       if (String(session.session_id) === '10001' || Number(session.session_id) === 10001) {
         continue // 跳过默认会话
       }
-
       try {
         const response = await loadSpecificSession(userId.value, session.session_id)
         const history = JSON.parse(response.msg[0].history)
@@ -151,7 +152,6 @@ const loadHistoryRecords = async () => {
         console.error('检查会话内容失败:', session.session_id, error)
       }
     }
-
     // 按更新时间降序排序
     const sortedHistory = validSessions.sort((a, b) =>
       new Date(b.update_time).getTime() - new Date(a.update_time).getTime()
@@ -171,6 +171,7 @@ const loadHistoryRecords = async () => {
   } catch (error) {
     console.error('加载历史记录失败:', error)
     chatRecords.value = []
+
     return null
   }
 }
