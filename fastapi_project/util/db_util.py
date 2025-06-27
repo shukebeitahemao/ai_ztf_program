@@ -12,8 +12,8 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.deepseek import DeepSeek
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.response_synthesizers import ResponseMode
-from .chat_util import initialize_llamaindex
-from ..settings import settings
+from fastapi_project.util.chat_util import initialize_llamaindex
+from fastapi_project.settings import settings
 
 ##获取连接对象
 def connect_to_postgres():
@@ -247,7 +247,7 @@ def create_summary_and_simple_index():
     llm, embed_model = initialize_llamaindex(
         deepseekapi=settings.DEEPSEEK_API  # 替换为您的DeepSeek API密钥
     )
-    documents = SimpleDirectoryReader(input_dir="fastapi_project\\data\\").load_data()
+    documents = SimpleDirectoryReader(input_dir=os.path.join("fastapi_project", "data")).load_data()
     for doc in documents:
         # 将原始doc_id存储在metadata中
         doc.metadata['original_doc_id'] = doc.doc_id
@@ -257,26 +257,18 @@ def create_summary_and_simple_index():
 
 ##保存两个index
 def save_indexes(index,doc_sum_index):
-    index.storage_context.persist("fastapi_project\\store\\simpleindex")
-    doc_sum_index.storage_context.persist("fastapi_project\\store\\summaryindex")
+    index.storage_context.persist(os.path.join("fastapi_project", "store", "simpleindex"))
+    doc_sum_index.storage_context.persist(os.path.join("fastapi_project", "store", "summaryindex"))
 
 ##加载两个index
 def load_indexes():
-    # 使用已初始化的模型实例，避免重复初始化
-    # from .chat_util import _llm_instance, _embed_model_instance
-    
-    # # 如果模型还未初始化，则进行初始化
-    # if _llm_instance is None or _embed_model_instance is None:
-    #     llm, embed_model = initialize_llamaindex(
-    #         deepseekapi=settings.DEEPSEEK_API
-    #     )
     llm, embed_model = initialize_llamaindex(deepseekapi=settings.DEEPSEEK_API)
-    # 加载VectorStoreIndex)
-    storage_context = StorageContext.from_defaults(persist_dir="fastapi_project\\store\\simpleindex")
+    # 加载VectorStoreIndex
+    storage_context = StorageContext.from_defaults(persist_dir=os.path.join("fastapi_project", "store", "simpleindex"))
     loaded_simpleindex = load_index_from_storage(storage_context)
 
     # 加载DocumentSummaryIndex
-    storage_context = StorageContext.from_defaults(persist_dir="fastapi_project\\store\\summaryindex")
+    storage_context = StorageContext.from_defaults(persist_dir=os.path.join("fastapi_project", "store", "summaryindex"))
     loaded_doc_sum_index = load_index_from_storage(storage_context)
     return loaded_simpleindex,loaded_doc_sum_index
 

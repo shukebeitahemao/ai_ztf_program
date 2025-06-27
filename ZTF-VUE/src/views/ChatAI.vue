@@ -5,7 +5,7 @@
       <!--左侧会话列表-->
       <Sidebar
         :chat-records="chatRecords"
-        @new-chat="handleNewChat()"
+        @new-chat="handleNewChat"
         @select-chat="handleSelectChat"
         @delete-chat="handleDeleteChat"
       />
@@ -54,21 +54,18 @@ const chatRecords = ref<ChatRecord[]>([])
 const userId = ref('')
 const currentSessionId = ref('')
 
-<!--合并后的版本-->
 // 路由离开前保存
-onBeforeRouteLeave(async (to, from, next) => {
-  try {
-    if (userId.value && messages.value.length > 0) {
-      await saveUserMsg(userId.value)
+onBeforeRouteLeave((to, from) => {
+  if (userId.value && messages.value.length > 0) {
+    try {
+      saveUserMsg(userId.value)
       localStorage.setItem('ztf_session_id', currentSessionId.value)
       console.log('跳转前保存成功')
+    } catch (error) {
+      console.error('跳转保存失败:', error)
     }
-  } catch (error) {
-    console.error('跳转保存失败:', error)
   }
-  next()
 })
-
 
 // 初始化：获取用户ID和会话ID
 onMounted(async () => {
@@ -126,7 +123,6 @@ const loadHistoryRecords = async () => {
     // 加载历史记录
     const historyResponse = await loadHistory(userId.value)
     console.log('加载历史记录', historyResponse)
-<!--合并后的版本-->
     if (!historyResponse || !historyResponse.msg || historyResponse.msg.length === 0) {
       chatRecords.value = []
       return null
