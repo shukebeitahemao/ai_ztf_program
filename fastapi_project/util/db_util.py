@@ -98,6 +98,9 @@ CREATE TABLE IF NOT EXISTS message (
     execute_query(query)
     return None
 
+#创建baidu_news表
+
+
 ##将指定文件夹中的文件写入pgsql的article表
 def write_to_article(txt_dir):
     import os
@@ -167,16 +170,15 @@ def generate_message_info():
 
 ## 从原始文档中生成两级索引，一层是summaryIndex
 ##创建摘要索引，自定义摘要内容
-def generate_summary_index(documents):
+def generate_summary_index(documents,prompt="""请用1-2句话总结以下文档，并提出1-2个该文档能回答的用户问题：\n
+    {context_str}\n
+    "—— 摘要："""):
     #初始化 Chroma 客户端
     chroma_client = chromadb.Client()
     chroma_collection = chroma_client.get_or_create_collection("text_doc1")
     # 创建向量存储orm
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
-    summary_tmpl = PromptTemplate(
-    "请用1-2句话总结以下文档，并提出1-2个该文档能回答的用户问题：\n"
-    "{context_str}\n"
-    "—— 摘要：")
+    summary_tmpl = PromptTemplate(prompt)
     # LlamaIndex ≥0.10.x 把 summary_template 收进 response_synthesizer
     resp_synth = get_response_synthesizer(
         response_mode=ResponseMode.TREE_SUMMARIZE,
@@ -221,22 +223,34 @@ def generate_simple_index(documents):
     return index
 
 ##根据用户提问，使用摘要索引获得相关文档
-def get_docs_from_summaryindex(doc_sum_index,query):
-    retriever = doc_sum_index.as_retriever(similarity_top_k=3)
-    # 手动进行检索（结果为 NodeWithScore 对象）
+def get_docs_from_summaryindex(doc_sum_index, query, k=3):
+    retriever = doc_sum_index.as_retriever(similarity_top_k=k)
     retrieved_nodes = retriever.retrieve(query)
-     # 使用集合去重
+    
+    print(f"检索到 {len(retrieved_nodes)} 个节点")
+    
     seen_doc_ids = set()
     result = []
+    
     for node in retrieved_nodes:
         ref_doc_id = node.node.ref_doc_id
-        # 只添加未见过的文档ID
         if ref_doc_id not in seen_doc_ids:
             seen_doc_ids.add(ref_doc_id)
+            
+            # 使用正确的方法获取摘要
+            try:
+                summary = doc_sum_index.get_document_summary(ref_doc_id)
+                # print(f"成功获取文档 {ref_doc_id} 的摘要: {summary[:100]}...")
+            except Exception as e:
+                print(f"获取文档 {ref_doc_id} 摘要时出错: {e}")
+                # 如果无法获取摘要，使用文本的前200个字符作为替代
+                summary = node.node.text[:200] + "..." if len(node.node.text) > 200 else node.node.text
+            
             result.append({
                 'ref_doc_id': ref_doc_id,
-                'score': node.score,  # 相关性分数
-                'text': node.node.text[:100] + '...',  # 文本预览
+                'score': node.score if node.score is not None else 0.0,
+                'text': node.node.text,
+                'summary': summary
             })
     
     return result
@@ -259,6 +273,10 @@ def create_summary_and_simple_index():
 def save_indexes(index,doc_sum_index):
     index.storage_context.persist("fastapi_project\\store\\simpleindex")
     doc_sum_index.storage_context.persist("fastapi_project\\store\\summaryindex")
+
+##保存两个index
+def save_news_indexes(doc_sum_index):
+    doc_sum_index.storage_context.persist("fastapi_project\\store\\news_summaryindex")
 
 ##加载两个index
 def load_indexes():
@@ -293,8 +311,8 @@ def get_final_nodes_text(loaded_simpleindex,loaded_doc_sum_index,user_query):
     return res_text
 
 if __name__=="__main__":
-    print(settings.DEEPSEEK_API)
-    print(".env文件信息成功加载！")
+    # print(settings.DEEPSEEK_API)
+    # print(".env文件信息成功加载！")
     # index,doc_sum_index=create_summary_and_simple_index()
     # save_indexes(index,doc_sum_index)
     # print("两个索引创建成功")
@@ -302,15 +320,104 @@ if __name__=="__main__":
     # print("两个索引加载成功")
     # res_text=get_final_nodes_text(loaded_simpleindex,loaded_doc_sum_index,user_query="章先生是谁？")
     # print(res_text)
-    connect_to_postgres()
-    print("数据库连接成功！")
-    create_article_table()
-    print("article表创建成功")
-    create_message_table()
-    print("message表创建成功")
-    generate_message_info()
-    print("message表随机生成三条信息成功")
-    write_to_article(settings.ARTICLE_DIR)
-    print("txt_files文件夹中的txt文件写入pgsql的article表成功!")
-    load_indexes()
-    print("两个索引加载成功")
+    # connect_to_postgres()
+    # print("数据库连接成功！")
+    # create_article_table()
+    # print("article表创建成功")
+    # create_message_table()
+    # print("message表创建成功")
+    # generate_message_info()
+    # print("message表随机生成三条信息成功")
+    # write_to_article(settings.ARTICLE_DIR)
+    # print("txt_files文件夹中的txt文件写入pgsql的article表成功!")
+    # load_indexes()
+    # print("两个索引加载成功")
+    query = """
+    select * from(
+select distinct on(content_length)* from(
+SELECT * FROM baidu_news 
+WHERE DATE_TRUNC('minute', created_at) = (
+    SELECT MAX(DATE_TRUNC('minute', created_at)) FROM baidu_news
+) and content_length > 100) as result) as b
+order by  hottopic;
+    """
+    res = execute_query(query)
+    import pandas as pd
+    df = pd.DataFrame(res)
+    groups = df.groupby(by=[1])
+    titles=[]
+    abstracts=[]
+    keywords_list=[]
+    contexts=[]
+    for name,group in groups:
+        titles.append(group.iloc[0][1])
+        abstracts.append(group.iloc[0][9])
+        keywords_list.append(group.iloc[0][10])
+        context = ''
+        for cont in group.iloc[:,3]:
+            context +='报道：\n\n'+ cont + '\n'+'------------------------------------\n'
+        contexts.append(context)
+    df_news=pd.DataFrame({'title':titles,'abstract':abstracts,'keywords':keywords_list,'context':contexts})
+    print(df_news['keywords'][0])
+    llm, embed_model = initialize_llamaindex(deepseekapi=settings.DEEPSEEK_API)
+    #加载新闻索引
+    storage_context = StorageContext.from_defaults(persist_dir="fastapi_project\\store\\news_summaryindex")
+    loaded_news_sum_index = load_index_from_storage(storage_context)
+    # 检索
+    ref_source = []
+    for keywords in df_news['keywords']:
+        query = f"""
+        用户希望查询的主题是：{keywords},
+        哪些文档的主题和用户查询的主题相符合？
+        """
+        ref_docs = get_docs_from_summaryindex(loaded_news_sum_index,query=query,k=3)
+        # 选择text最长的ref_doc
+        ref_doc = max(ref_docs, key=lambda x: len(x['text'])) if ref_docs else None
+        ref_source.append(ref_doc['text'])
+    df_news['ref_resource'] = ref_source
+    #开始获取评论
+    print(len(df_news))
+    from openai import OpenAI
+    client = OpenAI(api_key=settings.DEEPSEEK_API, base_url="https://api.deepseek.com")
+    system_msg_list = []
+    for i in range(len(df_news)):
+        se = df_news.iloc[i]
+        context = se['context']
+        ref_resource= se['ref_resource']
+        GET_COMMENTS_PROMPT=f"""
+        任务：你将扮演邹韬奋对时事新闻进行评论。你需要参考时事新闻的相关报道，并模仿目标文本纂写评论。
+        评论的长度和目标文本类似。
+        注意：
+        1.你需要解析目标文本所使用的叙述结构、修辞手法和语言风格，以及重要的态度，并在评论中体现这些特点。
+        2.你需要围绕时事新闻进行评论，而不能超出给定的时事新闻的范围。
+        3.最大限度利用时事新闻的信息。
+        4.你需要尽可能改写目标文本中的描述，以适应对时事新闻的评论。
+        ==============================
+        你参考的时事新闻是：
+        {context}
+        ===============================
+        你需要仿照的目标文本是：
+        {ref_resource}
+        ===============================
+        你的评论：
+        """
+        response = client.chat.completions.create(
+        model="deepseek-chat",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant"},
+            {"role": "user", "content": GET_COMMENTS_PROMPT},
+        ],
+        stream=False
+        )
+        system_msg = response.choices[0].message.content
+        system_msg_list.append(system_msg)
+    df_news['comments'] = system_msg_list
+    df_news.to_csv('comments.csv')
+        
+
+
+
+    
+
+
+

@@ -1,6 +1,15 @@
-from .db_util import execute_query,write_to_article
+from .db_util import (execute_query,
+                      write_to_article,
+                      generate_summary_index,
+                      get_docs_from_summaryindex,
+                      save_news_indexes)
+from .chat_util import initialize_llamaindex
+from ..settings import settings
+from llama_index.core.settings import Settings
+from llama_index.llms.deepseek import DeepSeek
 import uuid
 import json
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, DocumentSummaryIndex
 #为什么这里写.db_util，而不是from db_util import execute_query,write_to_article
 def split_markdown_by_heading(markdown_file: str, output_dir: str):
     """
@@ -29,66 +38,37 @@ def split_markdown_by_heading(markdown_file: str, output_dir: str):
         lines = section.split('\n', 1)
         if len(lines) == 2:
             title, content = lines
-            # 清理标题中的特殊字符
-            title = title.strip().replace('/', '_').replace('\\', '_')
-            
-            # 写入txt文件
-            output_file = os.path.join(output_dir, f"{title}.txt")
-            with open(output_file, 'w', encoding='utf-8') as f:
-                f.write(content.strip())
+            # 清理标题中的Windows文件名不允许的特殊字符
+            invalid_chars = ['<', '>', ':', '"', '|', '?', '*', '\\', '/']
+            title = title.strip()
+            for char in invalid_chars:
+                title = title.replace(char, '_')
+            # 移除开头和结尾的点，因为Windows不允许
+            title = title.strip('.')
+            # 如果标题为空，使用默认名称
+            if not title:
+                title = f"section_{len(sections)}"
+            # 判断文本长度，如果大于300才写入
+            if len(content.strip()) > 300:
+                # 写入txt文件
+                output_file = os.path.join(output_dir, f"{title}.txt")
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    f.write(content.strip())
                 
     print(f"文件已分割完成，保存在: {output_dir}")
 
-
-
-
-
-#执行    & D:/python_envs/ai_project/Scripts/python.exe -m fastapi_project.util.db_util
-
-
-
-# # 生成3个不同的user_id
-# user_ids = [str(uuid.uuid4()) for _ in range(3)]
-
-# # 为每个user_id生成3个不同的session_id并创建对应的历史记录
-# for user_id in user_ids:
-#     # 为每个用户生成3个session_id
-#     session_ids = ['session_'+str(uuid.uuid4()) for _ in range(3)]
-    
-#     # 为每个session创建历史记录
-#     for session_id in session_ids:
-#         chat_history = [
-#             {"role": "assistant", "content": "你好"},
-#             {"role": "user", "content": "邹韬奋是谁？"},
-#             {"role": "assistant", "content": "他是一个伟大的作家"},
-#             {"role": "user", "content": "你吃了么"},
-#         ]
-        
-#         # 将历史记录转换为JSON字符串
-#         history_json = json.dumps(chat_history, ensure_ascii=False)
-        
-#         # 插入数据库
-#         insert_query = f"""
-#         INSERT INTO message (user_id, session_id, history)
-#         VALUES ('{user_id}', '{session_id}', '{history_json}');
-#         """
-#         execute_query(insert_query)
-
-# print("已成功创建3个用户，每个用户3个会话")
-
-# 为message表添加abstract列
-# alter_query = """
-# ALTER TABLE message 
-# ADD COLUMN abstract TEXT DEFAULT '这是摘要';
-# """
-# execute_query(alter_query)
-# print("已成功为message表添加abstract列")
-
-# select_query = """
-# SELECT session_id,update_time,abstract FROM message limit 2;
-# """
-# results = execute_query(select_query)
-# print(type(results))
-
-
-
+if __name__ == "__main__":
+    llm, embed_model = initialize_llamaindex(deepseekapi=settings.DEEPSEEK_API)
+    #从md转txt文件
+    # split_markdown_by_heading("D:\\ai_ztf_resouce\\reading_material\\新闻作品.md","D:\\ai_ztf_resouce\\news_txt_files")
+    # print("文件已分割完成，保存在: D:\\ai_ztf_resouce\\news_txt_files")
+    #加载txt文件为documents
+    documents = SimpleDirectoryReader(input_dir="D:\\ai_ztf_resouce\\news_txt_files\\").load_data()
+    #生成summary_index
+    prompt = """根据以下文档提取5个主题关键词，示例："民生，税务，政府，养老金，上调税率"，文档是：\n
+    {context_str}\n
+    "—— 关键词："""
+    summary_index = generate_summary_index(documents,prompt)
+    #保存summary_index
+    summary_index.storage_context.persist(persist_dir="fastapi_project\\store\\news_summaryindex")
+    print("summary_index已保存")
