@@ -64,38 +64,34 @@ def split_txt_files(source_file='fastapi_project//chat//txt_file', output_file='
 
 #初始化llamaindex相关配置,.默认使用deepseek
 def initialize_llamaindex(deepseekapi, offline_mode=False):
-    # 检查环境变量是否设置了离线模式
-    # if os.getenv('HUGGINGFACE_OFFLINE', 'false').lower() == 'true':
-    #     offline_mode = True
-    #     print("检测到环境变量 HUGGINGFACE_OFFLINE=true，启用离线模式")
     # 初始化 DeepSeek 客户端
     llm = DeepSeek(
         api_key=deepseekapi,  # 替换为你的 DeepSeek API key
         model="deepseek-chat"
     )
+    
     # 设置模型缓存目录
-    #cache_dir = "D:\\ai_ztf_resouce\\model"
+    cache_dir = os.path.abspath("models")
+    os.makedirs(cache_dir, exist_ok=True)
+    print(f"模型缓存目录: {cache_dir}")
     
-    # 确保缓存目录存在
-   #
-    
-    # 初始化嵌入模型，使用本地模型路径
-    model_path = "ai_ztf/models/models--BAAI--bge-large-zh-v1.5/snapshots/79e7739b6ab944e86d6171e44d24c997fc1e0116"
-    # 检查本地路径是否存在，如果不存在则使用在线模型
-    if os.path.exists(model_path):
+    # 初始化嵌入模型
+    try:
         embed_model = HuggingFaceEmbedding(
-            model_name=model_path,
-            trust_remote_code=True
+            model_name="BAAI/bge-large-zh-v1.5",
+            trust_remote_code=True,
+            cache_folder=cache_dir,
+            model_kwargs={
+                "trust_remote_code": True,
+                "revision": "main",
+                "use_safetensors": True
+            }
         )
-        print(f"成功加载本地 BGE 模型: {model_path}")
-    # else:
-    # embed_model = HuggingFaceEmbedding(
-    #     model_name="BAAI/bge-large-zh-v1.5",
-    #     trust_remote_code=True,
-    #     cache_folder="ai_ztf/models"
-    # )
-    # print("使用在线 BAAI/bge-large-zh-v1.5 嵌入模型")
-    # print("成功加载 BAAI/bge-large-zh-v1.5 嵌入模型")
+        print("成功加载 BAAI/bge-large-zh-v1.5 嵌入模型")
+    except Exception as e:
+        print(f"模型加载失败: {str(e)}")
+        raise
+    
     # 设置全局配置
     Settings.llm = llm
     Settings.embed_model = embed_model
