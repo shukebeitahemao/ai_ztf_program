@@ -5,7 +5,7 @@
       <!--左侧会话列表-->
       <Sidebar
         :chat-records="chatRecords"
-        @new-chat="handleNewChat()"
+        @new-chat="handleNewChat"
         @select-chat="handleSelectChat"
         @delete-chat="handleDeleteChat"
       />
@@ -22,6 +22,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
 import WebHeader from '../components/WebHeader.vue'
 import Sidebar from '../components/Sidebar.vue'
 import ChatHeader from '../components/ChatHeader.vue'
@@ -53,6 +54,18 @@ const chatRecords = ref<ChatRecord[]>([])
 const userId = ref('')
 const currentSessionId = ref('')
 
+// 路由离开前保存
+onBeforeRouteLeave((to, from) => {
+  if (userId.value && messages.value.length > 0) {
+    try {
+      saveUserMsg(userId.value)
+      localStorage.setItem('ztf_session_id', currentSessionId.value)
+      console.log('跳转前保存成功')
+    } catch (error) {
+      console.error('跳转保存失败:', error)
+    }
+  }
+})
 
 // 初始化：获取用户ID和会话ID
 onMounted(async () => {
@@ -110,15 +123,36 @@ const loadHistoryRecords = async () => {
     // 加载历史记录
     const historyResponse = await loadHistory(userId.value)
     console.log('加载历史记录', historyResponse)
-
-    // 检查历史记录是否为空
     if (!historyResponse || !historyResponse.msg || historyResponse.msg.length === 0) {
+      chatRecords.value = []
       return null
     }
+
+    // 过滤有内容的会话，删除空会话
+    const validSessions = []
+    for (const session of historyResponse.msg) {
+      if (String(session.session_id) === '10001' || Number(session.session_id) === 10001) {
+        continue // 跳过默认会话
+      }
+      try {
+        const response = await loadSpecificSession(userId.value, session.session_id)
+        const history = JSON.parse(response.msg[0].history)
+        if (history && history.length > 0) {
+          validSessions.push(session) // 有内容的会话保留
+        } else {
+          // 删除空会话
+          await deleteSession(userId.value, session.session_id)
+          console.log('删除空会话:', session.session_id)
+        }
+      } catch (error) {
+        console.error('检查会话内容失败:', session.session_id, error)
+      }
+    }
     // 按更新时间降序排序
-    const sortedHistory = historyResponse.msg.sort((a, b) =>
+    const sortedHistory = validSessions.sort((a, b) =>
       new Date(b.update_time).getTime() - new Date(a.update_time).getTime()
     )
+
     // 转换为ChatRecord格式并更新列表
     chatRecords.value = sortedHistory.map(session => ({
       id: session.session_id,
@@ -127,9 +161,13 @@ const loadHistoryRecords = async () => {
       userid: userId.value,
       topic: localStorage.getItem(`topic_${session.session_id}`) || ''
     }))
+
+    console.log('有效的历史记录:', sortedHistory)
     return sortedHistory
   } catch (error) {
     console.error('加载历史记录失败:', error)
+    chatRecords.value = []
+
     return null
   }
 }

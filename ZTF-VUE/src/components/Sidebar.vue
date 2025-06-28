@@ -3,7 +3,7 @@
     <div class="h-full flex flex-col">
       <div class="p-4 border-b border-gray-200">
         <button
-          @click="$emit('new-chat')"
+          @click="emit('new-chat')"
           class="w-full py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
         >
           新建会话
@@ -18,7 +18,7 @@
             v-for="record in chatRecords"
             :key="record.id"
             class="p-3 hover:bg-gray-100 cursor-pointer transition-colors border-b border-gray-100 group relative"
-            @click="$emit('select-chat', record.id)"
+            @click="emit('select-chat', record.id)"
           >
             <div class="flex items-start gap-2">
               <button
