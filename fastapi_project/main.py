@@ -194,7 +194,8 @@ def chat(
     userid: str = Query(..., description="用户ID"),
     sessionid: str = Query(..., description="会话ID"), 
     user_msg: str = Query(..., description="用户消息"),
-    story_type: str = Query(..., description="故事类型")
+    story_type: str = Query(..., description="故事类型"),
+    func_control: dict = Form(default={'Vector': True, 'knowledge': True, 'EsSearch': True, 'Model_enhance': True})
 ):
     #获取msg_pool中user_id和seession_id对应的msg列表
     msg_list = msg_pool[userid][sessionid]
@@ -450,7 +451,7 @@ def save_usermsg(
         db_util.execute_query(update_query)
     return {"msg": "保存成功"}
 
-def process_chat_internal(userid: str, sessionid: str, user_msg: str, story_type: str) -> str:
+def process_chat_internal(userid: str, sessionid: str, user_msg: str, story_type: str, func_control: dict) -> str:
     """
     内部聊天处理函数，返回AI回复
     """
@@ -522,7 +523,8 @@ async def upload_audio(
     audio: UploadFile = File(...),
     user_id: str = Form(...),
     session_id: str = Form(...),
-    story_type: str = Form(default="x")
+    story_type: str = Form(default="x"),
+    func_control: dict = Form(default={'Vector': True, 'knowledge': True, 'EsSearch': True, 'Model_enhance': True})
 ):
     """
     接收前端上传的音频文件，进行语音识别，并返回AI回复
@@ -612,7 +614,10 @@ async def upload_audio(
                     print(f"AI回复语音合成成功，时长: {ai_audio_duration}秒")
             except Exception as e:
                 print(f"AI回复语音合成失败: {e}")
-        msg_pool[user_id][session_id].append({"role": "assistant", "content": ai_response})
+        
+        # 确保ai_response不为None再添加到消息池
+        if ai_response is not None:
+            msg_pool[user_id][session_id].append({"role": "assistant", "content": ai_response})
         
         return {
             "msg": "语音处理成功",

@@ -21,15 +21,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted ,onUnmounted} from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import WebHeader from '../components/WebHeader.vue'
 import Sidebar from '../components/Sidebar.vue'
 import ChatHeader from '../components/ChatHeader.vue'
 import ChatContainer from '../components/ChatContainer.vue'
 import ChatInput from '../components/ChatInput.vue'
-import { getUserId, createNewSession, sendMessage, loadSpecificSession, loadHistory, deleteSession, saveUserMsg } from '../api/ftbAPI'
-
+//修改
+//import { getUserId, createNewSession, sendMessage, loadSpecificSession, loadHistory, deleteSession, saveUserMsg, saveUserMsgOnUnload } from '../api/ftbAPI'
+import { getUserId, createNewSession, sendMessage, loadSpecificSession, loadHistory, deleteSession, saveUserMsg, saveUserMsgOnUnload } from '../api/ftbAPI'
 //消息结构
 interface Message {
   id: number        // 消息ID
@@ -54,11 +55,63 @@ const chatRecords = ref<ChatRecord[]>([])
 const userId = ref('')
 const currentSessionId = ref('')
 
+// 清理事件监听器
+// onUnmounted(() => {
+//   window.removeEventListener('beforeunload', handlePageUnload)
+//   window.removeEventListener('pagehide', handlePageUnload)
+//   document.removeEventListener('visibilitychange', handleVisibilityChange)
+// })
+
+//修改
+// 添加防重复调用的标志
+// let isSaving = false
+
+
+// // 普通的保存函数（用于路由切换等场景）
+// const handleSaveUserMsg = async () => {
+//   if (isSaving || !userId.value || messages.value.length === 0) return
+  
+//   isSaving = true
+//   try {
+//     await saveUserMsg(userId.value)
+//     localStorage.setItem('ztf_session_id', currentSessionId.value)
+//     console.log('保存成功')
+//   } catch (error) {
+//     console.error('保存失败:', error)
+//   } finally {
+//     isSaving = false
+//   }
+// }
+
+// // 页面卸载时的保存函数（使用sendBeacon）
+// const handlePageUnload = () => {
+//   if (!userId.value || isSaving || messages.value.length === 0) return
+  
+//   // 使用 sendBeacon 确保请求不被中止
+//   const success = saveUserMsgOnUnload(userId.value)
+//   console.log('页面卸载保存:', success ? '成功' : '失败')
+  
+//   // 保存会话ID到localStorage
+//   if (currentSessionId.value) {
+//     localStorage.setItem('ztf_session_id', currentSessionId.value)
+//   }
+// }
+
+// // 页面可见性变化时的保存（更可靠的保存时机）
+// const handleVisibilityChange = () => {
+//   // 当页面变为隐藏状态时保存
+//   if (document.hidden && userId.value && !isSaving && messages.value.length > 0) {
+//     handleSaveUserMsg()
+//   }
+// }
+
 // 路由离开前保存
 onBeforeRouteLeave((to, from) => {
   if (userId.value && messages.value.length > 0) {
     try {
+      //修改
       saveUserMsg(userId.value)
+      // handleSaveUserMsg()
       localStorage.setItem('ztf_session_id', currentSessionId.value)
       console.log('跳转前保存成功')
     } catch (error) {
@@ -102,6 +155,13 @@ onMounted(async () => {
     await handleNewChat()
     console.log('1-初始化失败，创建新会话')
   }
+  //修改
+  //  // 监听页面卸载事件（使用sendBeacon）
+  //  window.addEventListener('beforeunload', handlePageUnload)
+  // window.addEventListener('pagehide', handlePageUnload) // 移动端兼容
+  
+  // 监听页面可见性变化（更可靠的保存时机）
+  // document.addEventListener('visibilitychange', handleVisibilityChange)
 
   // 添加页面关闭时的自动保存功能
   window.addEventListener('beforeunload', async () => {
@@ -110,12 +170,29 @@ onMounted(async () => {
         await saveUserMsg(userId.value)
         // 保存当前会话ID
         localStorage.setItem('ztf_session_id', currentSessionId.value)
+        console.log('自动保存成功')
       }
+    // 暂停100秒
+    // await new Promise(resolve => setTimeout(resolve, 100000))
     } catch (error) {
       console.error('自动保存失败:', error)
     }
   })
-})
+  // //添加浏览器后退时自动保存
+  // window.addEventListener('popstate', async () => {
+  //   try {
+  //     if (userId.value) {
+  //       await saveUserMsg(userId.value)
+  //       // 保存当前会话ID
+  //       localStorage.setItem('ztf_session_id', currentSessionId.value)
+  //       console.log('自动保存成功')
+  //     }
+  //   } catch (error) {
+  //     console.error('自动保存失败:', error)
+  //   }
+  // })
+}
+)
 
 // 加载历史记录
 const loadHistoryRecords = async () => {

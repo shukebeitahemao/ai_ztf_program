@@ -84,7 +84,7 @@ def initialize_llamaindex(deepseekapi, offline_mode=False):
             model_kwargs={
                 "trust_remote_code": True,
                 "revision": "main",
-                "use_safetensors": True
+                "local_files_only": True
             }
         )
         print("成功加载 BAAI/bge-large-zh-v1.5 嵌入模型")

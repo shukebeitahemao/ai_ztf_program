@@ -285,3 +285,36 @@ export const createNewChat = async (chatTitle: string, topic: string = '') => {
     throw error
   }
 }
+
+/**
+ * 页面卸载时保存用户消息（使用sendBeacon确保请求不被中止）
+ * 功能：在页面卸载时可靠地保存用户消息
+ * 参数：
+ *   - userid: 用户ID
+ * 返回值：
+ *   - boolean: 是否成功发送
+ */
+export const saveUserMsgOnUnload = (userid: string): boolean => {
+  try {
+    const url = `${API_BASE_URL}/chat/save_usermsg?userid=${userid}`
+
+    // 使用sendBeacon发送请求，保证页面卸载时也能成功发送
+    if (navigator.sendBeacon) {
+      console.log('使用sendBeacon保存用户消息:', userid)
+      return navigator.sendBeacon(url)
+    } else {
+      // 降级方案：使用同步fetch（仅在不支持sendBeacon的旧浏览器中）
+      console.log('使用fetch降级方案保存用户消息:', userid)
+      fetch(url, {
+        method: 'GET',
+        keepalive: true // 保持连接活跃
+      }).catch(error => {
+        console.warn('降级保存失败:', error)
+      })
+      return true
+    }
+  } catch (error) {
+    console.error('页面卸载保存失败:', error)
+    return false
+  }
+}
