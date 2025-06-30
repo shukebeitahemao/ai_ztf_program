@@ -25,10 +25,27 @@
         </div>
       </div>
     </div>
+    <!-- 思考中提示 -->
+    <div v-if="isThinking" class="message-animation">
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 flex-shrink-0">
+          <img
+            src="/avatars/system-avatar.png"
+            alt="系统头像"
+            class="w-full h-full rounded-full object-cover"
+          />
+        </div>
+        <div class="bg-white text-gray-800 max-w-[80%] rounded-2xl p-4">
+          <div class="text-sm">思考中<span class="thinking-dots">{{ dots }}</span></div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
+
 interface Message {
   id: number
   content: string
@@ -36,9 +53,30 @@ interface Message {
   timestamp: Date
 }
 
-defineProps<{
+const props = defineProps<{
   messages: Message[]
+  isThinking?: boolean
 }>()
+
+const dots = ref('.')
+let dotsInterval: number | null = null
+
+// 动态省略号效果
+const updateDots = () => {
+  if (dots.value === '.') dots.value = '..'
+  else if (dots.value === '..') dots.value = '...'
+  else dots.value = '.'
+}
+
+onMounted(() => {
+  dotsInterval = window.setInterval(updateDots, 500)
+})
+
+onUnmounted(() => {
+  if (dotsInterval) {
+    clearInterval(dotsInterval)
+  }
+})
 
 const formatTime = (date: Date) => {
   return new Intl.DateTimeFormat('zh-CN', {
@@ -62,5 +100,10 @@ const formatTime = (date: Date) => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.thinking-dots {
+  display: inline-block;
+  min-width: 1.5em;
 }
 </style>

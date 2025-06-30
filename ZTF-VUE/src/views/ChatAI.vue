@@ -11,7 +11,7 @@
       />
       <main class="flex-1 flex flex-col bg-paper">
         <ChatHeader @new-chat="handleTopicChat" />  <!--顶部标题栏-->
-        <ChatContainer :messages="messages" />  <!--消息列表-->
+        <ChatContainer :messages="messages" :is-thinking="isThinking" />  <!--消息列表-->
         <div class="mt-auto pb-6 px-6">
           <ChatInput @send-message="handleSendMessage" @clear-messages="handleClearMessages" /> <!--底部输入框-->
         </div>
@@ -53,6 +53,7 @@ const messages = ref<Message[]>([])
 const chatRecords = ref<ChatRecord[]>([])
 const userId = ref('')
 const currentSessionId = ref('')
+const isThinking = ref(false)  // 添加思考状态控制
 
 // 路由离开前保存
 onBeforeRouteLeave((to, from) => {
@@ -241,6 +242,9 @@ const handleSendMessage = async (content: string) => {
   }
   messages.value.push(userMessage)
 
+  // 显示思考中状态
+  isThinking.value = true
+
   // 发送消息到服务器
   try {
     // 从localStorage获取当前会话的topic
@@ -254,6 +258,8 @@ const handleSendMessage = async (content: string) => {
       story_type  // story_type
     )
     console.log('发送消息到后端',response)
+    // 隐藏思考中状态
+    isThinking.value = false
     // 添加系统回复
     const systemMessage: Message = {
       id: Date.now() + 1,
@@ -265,6 +271,8 @@ const handleSendMessage = async (content: string) => {
     }
     messages.value.push(systemMessage)
   } catch (error: any) {
+    // 隐藏思考中状态
+    isThinking.value = false
     console.error('发送消息失败:', error)
     // 添加更详细的错误提示消息
     const errorMessage: Message = {
